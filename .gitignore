@@ -41,6 +41,7 @@ secrets/
 # Test artifacts
 artifacts/
 test-artifacts/
+traceforge-demo-output/
 tmp/
 temp/
 .tox/

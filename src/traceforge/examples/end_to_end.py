@@ -27,6 +27,7 @@ SPEC = {
 
 def run_workflow(output_dir: Path) -> None:
     """Capture, seal, validate, replay, evaluate, export, and run pytest offline."""
+    output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     store = JsonFileCapsuleStore()
     capsule = capture_controlled_failure()
