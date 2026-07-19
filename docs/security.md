@@ -58,7 +58,7 @@ The feasibility spike assumes local execution, local files, offline default test
 ## Known Limitations
 
 - Redaction rules are not implemented yet.
-- The Replay Capsule schema is not defined yet.
+- Replay Capsule v0 is defined by the [contract](contracts/replay-capsule-v0.md) and [structural schema](../schemas/replay-capsule-v0.schema.json), which are under review.
 - Safe fixture review criteria are not detailed yet.
 - No production threat model exists yet.
 - No claim is made that all possible sensitive values can be detected automatically.

@@ -1,22 +1,27 @@
 # Project State
 
-Last verified date: 2026-07-17.
+Last verified date: 2026-07-19.
 
 ## Current Phase
 
-TraceForge is in documentation and feasibility definition. The repository is not yet an implementation project.
+The contract phase is complete, and TraceForge is entering its first feasibility implementation phase. Implementation has not started.
 
 ## Current Milestone
 
-Five-day weather replay feasibility spike.
+Minimal validator/sealer.
 
-The milestone uses a controlled local LangGraph/OpenWeather failure from Agentic-chatbot as the system under test unless a genuine production failure is later supplied.
+This milestone has not started.
+
+## Completed Milestones
+
+- Documentation foundation: commit `e422aa8`.
+- Replay Capsule v0 contract and structural schema: accepted after adversarial review on 2026-07-19, with JSON Schema meta-validation, two positive validation cases, and ten negative validation cases passing.
 
 ## Repository Status
 
-Documentation scaffold only. Implementation has not started.
+Documentation and the structural schema exist. Implementation has not started.
 
-No source-code directories, package metadata, dependency files, Docker files, tests, fixtures, or service infrastructure have been added.
+No source-code directories, package metadata, dependency files, Docker files, tests, fixtures, or service infrastructure have been added. No canonicalizer, validator, sealer, replay runtime, tests, or sealed capsule exists.
 
 ## Confirmed Decisions
 
@@ -40,7 +45,6 @@ No source-code directories, package metadata, dependency files, Docker files, te
 
 ## Known Blockers and Open Questions
 
-- Replay Capsule schema is not defined.
 - Capture boundary inside Agentic-chatbot is not defined.
 - Sanitization review rules for capsule fixtures are not defined.
 - The exact offline fake or recorded model adapter shape is not defined.
@@ -52,7 +56,7 @@ Go, Kafka, Terraform, Kubernetes, ClickHouse, distributed storage, microservices
 
 ## Exact Next Approved Task
 
-Define the controlled Weather Grounding Capsule scenario and its required captured fields. Do not implement source code until that scenario and acceptance criteria are approved.
+Design the validator/sealer package boundary, algorithms, error model, and acceptance tests. Implementation begins only after the design is understood and approved.
 
 ## Milestone-Boundary Checklist
 
