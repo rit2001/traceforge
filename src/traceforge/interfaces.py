@@ -34,3 +34,11 @@ class FrameworkAdapter(Protocol):
     """Runs trusted local subject code with injected recorded dependencies."""
 
     def run(self, invocation_input: Any, dependencies: DependencyAdapter) -> dict[str, Any]: ...
+
+
+class EventPublisher(Protocol):
+    """Accepts sanitized capture events without blocking the application path."""
+
+    def publish(self, event: dict[str, Any]) -> Any: ...
+
+    def close(self, timeout: float = 5.0) -> int: ...

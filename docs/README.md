@@ -15,6 +15,7 @@ This directory is the authoritative map for TraceForge project knowledge. Avoid 
 - [Replay Capsule v0 contract](contracts/replay-capsule-v0.md): normative `0.1.0` document structure, replay semantics, validation boundaries, redaction, and integrity rules.
 - [ADR-0001](decisions/ADR-0001-replay-first-product.md): accepted decision to build a replay-first product instead of a broad LangSmith clone.
 - [ADR-0002](decisions/ADR-0002-replay-capsule-v0-format.md): accepted Replay Capsule v0 format, canonicalization, integrity, dependency normalization, and fail-closed fixture decisions.
+- [ADR-0003](decisions/ADR-0003-capture-event-transport.md): accepted asynchronous capture-event envelope, ordering, idempotency, and evidence boundary.
 
 ## Ownership Rules
 

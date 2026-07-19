@@ -53,3 +53,11 @@ def test_dashboard_upload_limit(tmp_path: Path) -> None:
         "/api/replay", content=b"{" + b"x" * 30 + b"}", headers={"content-type": "application/json"}
     )
     assert response.status_code == 413
+
+
+def test_dashboard_lists_all_case_study_runners(tmp_path: Path) -> None:
+    response = TestClient(create_app(tmp_path / "history.sqlite3")).get("/")
+    assert response.status_code == 200
+    assert "controlled-weather" in response.text
+    assert "rag-citation-grounding" in response.text
+    assert "tool-argument-safety" in response.text

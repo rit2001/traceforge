@@ -1,0 +1,20 @@
+{
+  "assertions": [
+    {
+      "expected": "Records are retained for 30 days.",
+      "operator": "equals",
+      "path": "output.answer"
+    },
+    {
+      "expected": "policy-7",
+      "operator": "equals",
+      "path": "output.citation"
+    },
+    {
+      "expected": true,
+      "operator": "equals",
+      "path": "output.grounded"
+    }
+  ],
+  "version": "0.1.0"
+}
