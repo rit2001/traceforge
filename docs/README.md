@@ -17,7 +17,7 @@ This directory is the authoritative map for TraceForge project knowledge. Avoid 
 - [ADR-0002](decisions/ADR-0002-replay-capsule-v0-format.md): accepted Replay Capsule v0 format, canonicalization, integrity, dependency normalization, and fail-closed fixture decisions.
 - [ADR-0003](decisions/ADR-0003-capture-event-transport.md): accepted asynchronous capture-event envelope, ordering, idempotency, and evidence boundary.
 - [Go ingestion gateway](services/go-ingestion-gateway.md): local HTTP ingestion, validation, backpressure, and Kafka publishing semantics.
-- [Observability](observability.md): current local telemetry boundary and explicitly incomplete cross-service tracing work.
+- [Observability](observability.md): optional local cross-service traces, replay links, metrics, verification commands, and security limitations.
 
 ## Ownership Rules
 

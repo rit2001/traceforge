@@ -5,3 +5,5 @@ The Go gateway keeps HTTP capture ingestion isolated from the Python replay engi
 Kafka delivery failures happen after acceptance and are counted separately. The gateway never flushes Kafka per request. Its shutdown path is bounded. Structured logs contain error types and status, never event payloads.
 
 Run locally with `docker compose -f compose.kafka.yml up --build`. The gateway listens on `127.0.0.1:18080`. `GET /healthz` reports process health; `GET /readyz` reports whether the Kafka-backed queue is accepting work.
+
+With the Compose `observability` profile, application startup configures the optional OTLP exporter. W3C HTTP trace context is continued through `capture.receive`, `capture.validate`, and `capture.publish`, then injected into Kafka headers. See [Local observability](../observability.md) for verification commands and limitations.

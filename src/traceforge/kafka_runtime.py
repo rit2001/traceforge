@@ -9,6 +9,8 @@ from typing import Any
 
 from traceforge.assembly import SQLiteAssemblyState
 from traceforge.kafka_worker import KafkaAssemblyWorker
+from traceforge.metrics import start_worker_metrics
+from traceforge.observability import configure
 from traceforge.store import JsonFileCapsuleStore
 from traceforge.validation import validate_capsule
 
@@ -36,11 +38,14 @@ def create_worker(
         }
     )
     consumer.subscribe([topic])
+    telemetry_provider = configure("traceforge-capsule-worker")
+    start_worker_metrics()
     return KafkaAssemblyWorker(
         consumer,
         Producer({"bootstrap.servers": bootstrap}),
         SQLiteAssemblyState(database, directory),
         dlq_topic,
+        telemetry_provider,
     )
 
 

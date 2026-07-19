@@ -4,11 +4,11 @@ Last verified date: 2026-07-19.
 
 ## Current Phase
 
-The contract, feasibility implementation, and experimental MVP product-completion phases are complete.
+The replay feasibility implementation is complete. TraceForge is in the optional distributed-ingestion v0.2 implementation phase.
 
 ## Current Milestone
 
-Experimental local MVP product-completion pass.
+Cross-service OpenTelemetry for the Go gateway, Kafka transport, Python worker, assembly, sealing, and later linked replay.
 
 This milestone was completed on 2026-07-19.
 
@@ -19,12 +19,14 @@ This milestone was completed on 2026-07-19.
 - Minimal validator/sealer: implemented on 2026-07-19 with 21 focused tests passing offline.
 - Exact replay vertical slice: implemented on 2026-07-19 with sequential recorded dependencies, zero-network enforcement, a controlled weather capsule, and a separate regression specification; 33 focused tests pass offline.
 - Product-completion implementation: pytest export, capture/redaction SDK, optional LangGraph integration, local FastAPI/SQLite dashboard, Docker packaging, CI, and public documentation completed on 2026-07-19 with 43 tests passing. Ruff, compile, JSON, wheel, clean-install, installed CLI, generated-test, and dashboard-health checks passed; Docker build verification was skipped because the local daemon was unavailable.
+- Optional Kafka ingestion: the Go gateway, at-least-once Kafka worker, idempotent SQLite assembly, DLQ boundary, host-visible local storage, and real HTTP-to-sealed-capsule replay smoke passed on 2026-07-19.
+- Cross-service observability: W3C context propagation through Go, Kafka headers, and Python plus a separate linked replay trace passed on 2026-07-19. The verified run used capture trace `79cedf78786ca8f00ac6703927002fc6` and replay trace `58340b38ce71e300e33f3f2de967c277`; required spans, the Kafka parent relationship, and the replay link to SQLite correlation span `d5b190791001b831` were present, and the bounded attribute scan passed.
 
 ## Repository Status
 
-Documentation, the structural schema, the `traceforge-replay` distribution, controlled local replay artifacts, and focused tests exist.
+Documentation, both structural schemas, the `traceforge-replay` distribution, controlled local replay artifacts, focused tests, an optional Kafka worker, and a Go ingestion gateway exist.
 
-The package provides capture with best-effort redaction, sealing, validation, exact replay, deterministic comparison, regression evaluation/export, one optional LangGraph adapter, and `seal`, `validate`, `replay`, `export-pytest`, and `serve` commands. The local dashboard stores replay summaries in SQLite. No fork replay, live replay, production capture integration, hosted service, authentication, Kafka, Kubernetes, or Terraform exists.
+The package provides capture with best-effort redaction, sealing, validation, exact replay, deterministic comparison, regression evaluation/export, one optional LangGraph adapter, Kafka assembly commands, and a local dashboard. The optional local distributed path provides HTTP ingestion, Kafka transport, SQLite idempotency/assembly, Prometheus metrics, and disabled-by-default OTLP tracing. No fork replay, live replay, production capture integration, hosted service, authentication, Kubernetes, or Terraform exists.
 
 ## Confirmed Decisions
 
@@ -52,14 +54,15 @@ The package provides capture with best-effort redaction, sealing, validation, ex
 - Sanitization review rules for capsule fixtures are not defined.
 - The exact offline fake or recorded model adapter shape is not defined.
 - The package/API surface for future Agentic-chatbot integration is not defined.
+- Concurrent host-side inspection of the worker's bind-mounted SQLite WAL is unsupported on Docker Desktop; use a service-owned reader or inspect after shutdown.
 
 ## Deliberately Postponed Technologies
 
-Go, Kafka, Terraform, Kubernetes, ClickHouse, distributed storage, microservices, SaaS authentication, and payment systems are postponed until replay evidence shows they are needed.
+Kubernetes, Terraform, ClickHouse, production distributed storage, SaaS authentication, and payment systems remain postponed. The current Go/Kafka/Collector stack is local development infrastructure only.
 
 ## Exact Next Approved Task
 
-Review the experimental MVP and approve any next milestone before further implementation.
+Review the verified local distributed-ingestion and observability milestone before approving Kubernetes, Terraform, or another expansion.
 
 ## Milestone-Boundary Checklist
 

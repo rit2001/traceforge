@@ -15,9 +15,16 @@ import (
 	"traceforge/ingest-gateway/internal/events"
 	"traceforge/ingest-gateway/internal/httpapi"
 	"traceforge/ingest-gateway/internal/publisher"
+	"traceforge/ingest-gateway/internal/telemetry"
 )
 
 func main() {
+	shutdownTelemetry, err := telemetry.Setup(context.Background())
+	if err != nil {
+		slog.Error("telemetry setup failed", "error_type", "telemetry")
+		os.Exit(1)
+	}
+	defer shutdownTelemetry(context.Background())
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("invalid configuration", "error_type", "configuration")

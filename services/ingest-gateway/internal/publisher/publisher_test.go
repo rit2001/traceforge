@@ -3,11 +3,15 @@ package publisher
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type fakeClient struct {
@@ -95,4 +99,71 @@ func TestBoundedShutdown(t *testing.T) {
 		t.Fatal(err)
 	}
 	close(block)
+}
+
+func TestTraceHeadersInjected(t *testing.T) {
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	traceID, _ := trace.TraceIDFromHex("00112233445566778899aabbccddeeff")
+	spanID, _ := trace.SpanIDFromHex("0011223344556677")
+	state, _ := trace.ParseTraceState("vendor=value")
+	ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(
+		trace.SpanContextConfig{TraceID: traceID, SpanID: spanID, TraceFlags: trace.FlagsSampled, TraceState: state},
+	))
+	c := &fakeClient{}
+	p := newKafka(c, "topic", 1, true)
+	if err := p.Enqueue(ctx, "capture-1", []byte("safe")); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(time.Second)
+	for {
+		c.mu.Lock()
+		record := c.record
+		c.mu.Unlock()
+		if record != nil {
+			headers := map[string]string{}
+			for _, header := range record.Headers {
+				headers[header.Key] = string(header.Value)
+			}
+			if !strings.Contains(headers["traceparent"], traceID.String()) {
+				t.Fatal(headers)
+			}
+			if headers["tracestate"] != "vendor=value" {
+				t.Fatal(headers)
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("record not produced")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	ctxClose, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_ = p.Close(ctxClose)
+}
+
+func TestKafkaHeaderCarrierContract(t *testing.T) {
+	carrier := headerCarrier{
+		{Key: "traceparent", Value: []byte("parent")},
+		{Key: "tracestate", Value: []byte("vendor=value")},
+	}
+	if carrier.Get("traceparent") != "parent" || carrier.Get("missing") != "" {
+		t.Fatal("carrier lookup failed")
+	}
+	keys := carrier.Keys()
+	if len(keys) != 2 || keys[0] != "traceparent" || keys[1] != "tracestate" {
+		t.Fatalf("unexpected keys: %v", keys)
+	}
+}
+
+func TestProductionPublisherConstructionAndShutdown(t *testing.T) {
+	p, err := NewKafka([]string{"127.0.0.1:1"}, "traceforge.capture.v1", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if err := p.Close(ctx); err != nil {
+		t.Fatal(err)
+	}
 }

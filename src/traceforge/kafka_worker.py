@@ -9,8 +9,10 @@ from threading import Event
 from time import monotonic
 from typing import Any, Protocol
 
+from traceforge import metrics
 from traceforge.assembly import AssemblyError, AssemblyState
 from traceforge.exceptions import StructuralValidationError
+from traceforge.observability import message_context, shutdown, span
 
 LOGGER = logging.getLogger("traceforge.kafka.worker")
 
@@ -29,9 +31,15 @@ class DlqLike(Protocol):
 
 class KafkaAssemblyWorker:
     def __init__(
-        self, consumer: ConsumerLike, dlq: DlqLike, state: AssemblyState, dlq_topic: str
+        self,
+        consumer: ConsumerLike,
+        dlq: DlqLike,
+        state: AssemblyState,
+        dlq_topic: str,
+        telemetry_provider: Any = None,
     ) -> None:
         self.consumer, self.dlq, self.state, self.dlq_topic = consumer, dlq, state, dlq_topic
+        self.telemetry_provider = telemetry_provider
         self.stop_event = Event()
 
     def _send_dlq(self, message: Any, reason: str, timeout: float = 5.0) -> bool:
@@ -55,8 +63,12 @@ class KafkaAssemblyWorker:
 
     def process_message(self, message: Any) -> bool:
         try:
-            event = json.loads(message.value())
-            self.state.process(event)
+            with message_context(message.headers() if hasattr(message, "headers") else None):
+                with span("capture.consume"):
+                    event = json.loads(message.value())
+                    started = metrics.started()
+                    result = self.state.process(event)
+                    metrics.processed(started, result)
         except (
             json.JSONDecodeError,
             UnicodeDecodeError,
@@ -66,6 +78,7 @@ class KafkaAssemblyWorker:
             LOGGER.warning("capture event rejected", extra={"error_type": type(exc).__name__})
             if not self._send_dlq(message, type(exc).__name__):
                 return False
+            metrics.dlq()
         self.consumer.commit(message=message, asynchronous=False)
         return True
 
@@ -92,3 +105,4 @@ class KafkaAssemblyWorker:
             self.consumer.close()
             self.state.close()
             self.dlq.flush(5.0)
+            shutdown(self.telemetry_provider)

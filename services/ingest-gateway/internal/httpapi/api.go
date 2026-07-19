@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"mime"
@@ -11,6 +12,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	"traceforge/ingest-gateway/internal/events"
 	"traceforge/ingest-gateway/internal/publisher"
 )
@@ -53,7 +57,16 @@ func (a *API) Handler(reg *prometheus.Registry) http.Handler {
 		jsonStatus(w, 200, "ready")
 	})
 	m.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
-	m.HandleFunc("/v1/capture-events", a.capture)
+	m.Handle(
+		"/v1/capture-events",
+		otelhttp.NewHandler(
+			http.HandlerFunc(a.capture),
+			"capture.receive",
+			otelhttp.WithSpanNameFormatter(func(string, *http.Request) string {
+				return "capture.receive"
+			}),
+		),
+	)
 	return m
 }
 func (a *API) capture(w http.ResponseWriter, r *http.Request) {
@@ -77,14 +90,26 @@ func (a *API) capture(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "request body exceeds limit", 413)
 		return
 	}
+	validateContext, validateSpan := otel.Tracer("traceforge/ingest-gateway").Start(r.Context(), "capture.validate")
 	event, err := a.validator.Validate(body)
+	if err != nil {
+		validateSpan.RecordError(errors.New("validation failed"))
+		validateSpan.SetStatus(codes.Error, "validation failed")
+	}
+	validateSpan.End()
 	if err != nil {
 		a.rejected.Inc()
 		slog.Warn("capture rejected", "reason", "validation")
 		http.Error(w, "invalid capture event", 400)
 		return
 	}
-	err = a.publisher.Enqueue(r.Context(), event.CaptureID, body)
+	publishContext, publishSpan := otel.Tracer("traceforge/ingest-gateway").Start(validateContext, "capture.publish")
+	err = a.publisher.Enqueue(publishContext, event.CaptureID, body)
+	if err != nil {
+		publishSpan.RecordError(err)
+		publishSpan.SetStatus(codes.Error, "publish failed")
+	}
+	publishSpan.End()
 	if err == publisher.ErrFull {
 		a.queueFull.Inc()
 		http.Error(w, "producer queue full", 429)

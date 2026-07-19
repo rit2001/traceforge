@@ -15,6 +15,7 @@ from traceforge.examples.rag_agent import run as rag_runner
 from traceforge.examples.tool_safety_agent import run as tool_safety_runner
 from traceforge.examples.weather_agent import run as weather_runner
 from traceforge.history import SQLiteReplayHistory
+from traceforge.metrics import asgi_app
 from traceforge.replay import CallableFrameworkAdapter, replay_exact
 
 MAX_UPLOAD_BYTES = 1_000_000
@@ -32,6 +33,9 @@ def create_app(database: Path, max_upload_bytes: int = MAX_UPLOAD_BYTES) -> Fast
     history = SQLiteReplayHistory(database)
     app = FastAPI(title="TraceForge Replay", docs_url=None, redoc_url=None)
     app.mount("/static", StaticFiles(directory=package_dir / "static"), name="static")
+    prometheus_app = asgi_app()
+    if prometheus_app is not None:
+        app.mount("/metrics", prometheus_app)
 
     @app.middleware("http")
     async def reject_large_uploads(request: Request, call_next: Any) -> Any:

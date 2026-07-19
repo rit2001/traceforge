@@ -40,6 +40,13 @@ services:
     volumes:
       - ${TRACEFORGE_DATA_DIR:-./.traceforge-data}:/data
     restart: unless-stopped
+    environment:
+      OTEL_SDK_DISABLED: "false"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+      TRACEFORGE_WORKER_METRICS_PORT: "9464"
+    ports:
+      - "127.0.0.1:19464:9464"
     healthcheck:
       disable: true
 
@@ -56,6 +63,9 @@ services:
       - ${TRACEFORGE_DATA_DIR:-./.traceforge-data}:/data
     environment:
       TRACEFORGE_HISTORY_PATH: /data/history.sqlite3
+      OTEL_SDK_DISABLED: "false"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
 
   ingest-gateway:
     build:
@@ -63,7 +73,9 @@ services:
       dockerfile: services/ingest-gateway/Dockerfile
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:19092
-      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+      OTEL_SDK_DISABLED: "false"
     ports:
       - "127.0.0.1:18080:8080"
     depends_on:
@@ -86,12 +98,14 @@ services:
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
       - ./services/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+      - ${TRACEFORGE_DATA_DIR:-./.traceforge-data}/otel:/var/lib/otel
     ports:
       - "127.0.0.1:4317:4317"
       - "127.0.0.1:4318:4318"
       - "127.0.0.1:8889:8889"
+      - "127.0.0.1:13133:13133"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:13133/"]
+      test: ["CMD", "/otelcol-contrib", "validate", "--config=/etc/otelcol/config.yaml"]
       interval: 10s
       timeout: 5s
       retries: 6

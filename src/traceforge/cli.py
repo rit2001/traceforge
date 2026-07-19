@@ -82,20 +82,25 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "serve":
             import uvicorn
 
+            from traceforge.observability import configure, shutdown
             from traceforge.web import create_app
 
-            uvicorn.run(
-                create_app(
-                    Path(
-                        os.environ.get(
-                            "TRACEFORGE_HISTORY_PATH",
-                            str(Path.cwd() / ".traceforge-history.sqlite3"),
+            telemetry_provider = configure("traceforge-api")
+            try:
+                uvicorn.run(
+                    create_app(
+                        Path(
+                            os.environ.get(
+                                "TRACEFORGE_HISTORY_PATH",
+                                str(Path.cwd() / ".traceforge-history.sqlite3"),
+                            )
                         )
-                    )
-                ),
-                host=args.host,
-                port=args.port,
-            )
+                    ),
+                    host=args.host,
+                    port=args.port,
+                )
+            finally:
+                shutdown(telemetry_provider)
             return 0
 
         if args.command == "worker":

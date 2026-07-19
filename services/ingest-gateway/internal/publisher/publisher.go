@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/otel"
 )
 
 var ErrFull = errors.New("producer queue full")
@@ -20,9 +21,31 @@ type Publisher interface {
 	DeliveryFailures() uint64
 }
 type record struct {
-	key   string
-	value []byte
+	key     string
+	value   []byte
+	headers []kgo.RecordHeader
 }
+type headerCarrier []kgo.RecordHeader
+
+func (c *headerCarrier) Get(key string) string {
+	for _, h := range *c {
+		if h.Key == key {
+			return string(h.Value)
+		}
+	}
+	return ""
+}
+func (c *headerCarrier) Set(key, value string) {
+	*c = append(*c, kgo.RecordHeader{Key: key, Value: []byte(value)})
+}
+func (c *headerCarrier) Keys() []string {
+	keys := make([]string, 0, len(*c))
+	for _, h := range *c {
+		keys = append(keys, h.Key)
+	}
+	return keys
+}
+
 type client interface {
 	Ping(context.Context) error
 	Produce(context.Context, *kgo.Record, func(*kgo.Record, error))
@@ -51,12 +74,14 @@ func newKafka(c client, topic string, size int, start bool) *Kafka {
 	}
 	return k
 }
-func (k *Kafka) Enqueue(_ context.Context, key string, value []byte) error {
+func (k *Kafka) Enqueue(ctx context.Context, key string, value []byte) error {
 	if !k.Ready(context.Background()) {
 		return ErrUnavailable
 	}
+	carrier := headerCarrier{}
+	otel.GetTextMapPropagator().Inject(ctx, &carrier)
 	select {
-	case k.queue <- record{key, append([]byte(nil), value...)}:
+	case k.queue <- record{key: key, value: append([]byte(nil), value...), headers: carrier}:
 		return nil
 	default:
 		return ErrFull
@@ -71,7 +96,7 @@ func (k *Kafka) run() {
 	for {
 		select {
 		case r := <-k.queue:
-			k.client.Produce(context.Background(), &kgo.Record{Topic: k.topic, Key: []byte(r.key), Value: r.value}, func(_ *kgo.Record, err error) {
+			k.client.Produce(context.Background(), &kgo.Record{Topic: k.topic, Key: []byte(r.key), Value: r.value, Headers: r.headers}, func(_ *kgo.Record, err error) {
 				if err != nil {
 					k.failed.Add(1)
 					slog.Error("Kafka delivery failed", "error_type", "delivery")

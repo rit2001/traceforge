@@ -11,6 +11,7 @@ from typing import Any, Protocol
 from traceforge.canonical import canonicalize
 from traceforge.capture_events import sanitize_and_validate_event
 from traceforge.exceptions import SemanticValidationError
+from traceforge.observability import current_correlation, span
 from traceforge.sealing import seal_capsule
 from traceforge.store import JsonFileCapsuleStore
 
@@ -57,8 +58,14 @@ class SQLiteAssemblyState:
         self._connection.execute(
             "CREATE TABLE IF NOT EXISTS captures ("
             "capture_id TEXT PRIMARY KEY, last_sequence INTEGER NOT NULL, "
-            "completed INTEGER NOT NULL DEFAULT 0, capsule_path TEXT)"
+            "completed INTEGER NOT NULL DEFAULT 0, capsule_path TEXT, trace_id TEXT, span_id TEXT)"
         )
+        columns = {
+            row[1] for row in self._connection.execute("PRAGMA table_info(captures)").fetchall()
+        }
+        for column in ("trace_id", "span_id"):
+            if column not in columns:
+                self._connection.execute(f"ALTER TABLE captures ADD COLUMN {column} TEXT")
         self._connection.commit()
 
     def process(self, event: dict[str, Any]) -> ProcessResult:
@@ -106,13 +113,22 @@ class SQLiteAssemblyState:
             if safe["event_type"] != "capture_completed":
                 return ProcessResult(False, False)
 
-            draft = self._assemble(safe["capture_id"])
-            sealed = seal_capsule(draft)
+            with span("capsule.assemble"):
+                draft = self._assemble(safe["capture_id"])
+            with span("capsule.seal"):
+                sealed = seal_capsule(draft)
             target = self._capsule_directory / f"{safe['capture_id']}.json"
             JsonFileCapsuleStore().save(target, sealed)
+            correlation = current_correlation() or {}
             self._connection.execute(
-                "UPDATE captures SET completed=1, capsule_path=? WHERE capture_id=?",
-                (str(target), safe["capture_id"]),
+                "UPDATE captures SET completed=1, capsule_path=?, trace_id=?, span_id=? "
+                "WHERE capture_id=?",
+                (
+                    str(target),
+                    correlation.get("trace_id"),
+                    correlation.get("span_id"),
+                    safe["capture_id"],
+                ),
             )
             return ProcessResult(False, True, target)
 
@@ -141,13 +157,20 @@ class SQLiteAssemblyState:
 
     def capture(self, capture_id: str) -> dict[str, Any] | None:
         row = self._connection.execute(
-            "SELECT last_sequence, completed, capsule_path FROM captures WHERE capture_id=?",
+            "SELECT last_sequence, completed, capsule_path, trace_id, span_id "
+            "FROM captures WHERE capture_id=?",
             (capture_id,),
         ).fetchone()
         return (
             None
             if row is None
-            else {"last_sequence": row[0], "completed": bool(row[1]), "capsule_path": row[2]}
+            else {
+                "last_sequence": row[0],
+                "completed": bool(row[1]),
+                "capsule_path": row[2],
+                "trace_id": row[3],
+                "span_id": row[4],
+            }
         )
 
     def close(self) -> None:

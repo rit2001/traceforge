@@ -14,6 +14,10 @@ import (
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"traceforge/ingest-gateway/internal/events"
 	"traceforge/ingest-gateway/internal/publisher"
 )
@@ -167,6 +171,49 @@ func TestAsyncDeliveryFailureMetricBoundary(t *testing.T) {
 	h.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))
 	if !strings.Contains(w.Body.String(), "traceforge_gateway_delivery_failures_total 1") {
 		t.Fatal("delivery failure metric missing")
+	}
+}
+
+func TestExpectedSpansAndNoPayloadAttributes(t *testing.T) {
+	recorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
+	previous := otel.GetTracerProvider()
+	otel.SetTracerProvider(provider)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	defer otel.SetTracerProvider(previous)
+	p := &fakePublisher{ready: true}
+	h, _ := api(t, p, 4096)
+	r := httptest.NewRequest(
+		http.MethodPost,
+		"/v1/capture-events",
+		bytes.NewReader(fixture(t, "valid.json")),
+	)
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(
+		"traceparent",
+		"00-00112233445566778899aabbccddeeff-0011223344556677-01",
+	)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != 202 {
+		t.Fatal(w.Code)
+	}
+	names := map[string]bool{}
+	for _, span := range recorder.Ended() {
+		names[span.Name()] = true
+		if span.Name() == "capture.receive" && span.SpanContext().TraceID().String() != "00112233445566778899aabbccddeeff" {
+			t.Fatal("HTTP trace context was not extracted")
+		}
+		for _, attribute := range span.Attributes() {
+			if strings.Contains(attribute.Value.AsString(), "safe") {
+				t.Fatal("payload in span")
+			}
+		}
+	}
+	for _, name := range []string{"capture.receive", "capture.validate", "capture.publish"} {
+		if !names[name] {
+			t.Fatalf("missing span %s: %v", name, names)
+		}
 	}
 }
 

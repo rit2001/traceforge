@@ -11,7 +11,9 @@ from typing import Any
 from traceforge.dependencies import RecordedDependencyAdapter
 from traceforge.exceptions import SemanticValidationError
 from traceforge.interfaces import DependencyAdapter, FrameworkAdapter
+from traceforge.metrics import replay as record_replay
 from traceforge.network import block_network
+from traceforge.observability import replay_span
 from traceforge.regression import RegressionResult, evaluate_regression
 from traceforge.schema import validate_observation_structure
 from traceforge.validation import validate_capsule, validate_observation_semantics
@@ -81,8 +83,22 @@ def replay_exact(
     capsule: dict[str, Any],
     framework: FrameworkAdapter,
     regression_spec: Any | None = None,
+    correlation: dict[str, str] | None = None,
 ) -> ReplayResult:
     """Replay a valid capsule with recorded fixtures and zero live networking."""
+    try:
+        with replay_span(correlation):
+            result = _replay_exact(capsule, framework, regression_spec)
+    except Exception:
+        record_replay(False)
+        raise
+    record_replay(True)
+    return result
+
+
+def _replay_exact(
+    capsule: dict[str, Any], framework: FrameworkAdapter, regression_spec: Any | None
+) -> ReplayResult:
     validate_capsule(capsule)
     original_observation = deepcopy(capsule["original_observation"])
     dependencies = RecordedDependencyAdapter(capsule["dependencies"])
@@ -98,7 +114,7 @@ def replay_exact(
         if regression_spec is None
         else evaluate_regression(replay_observation, regression_spec)
     )
-    return ReplayResult(
+    result = ReplayResult(
         technical_status="completed",
         original_observation=original_observation,
         replay_observation=deepcopy(replay_observation),
@@ -107,3 +123,4 @@ def replay_exact(
         ),
         regression=regression,
     )
+    return result

@@ -2,7 +2,7 @@
 
 ## Feasibility-Spike Architecture
 
-The spike architecture is local, narrow, and file-based. Its purpose is to prove that replay is useful before building a platform.
+The original spike architecture was local, narrow, and file-based. The current v0.2 work preserves that replay core while adding an optional local asynchronous ingestion path.
 
 Core components:
 
@@ -14,7 +14,7 @@ Core components:
 - Diff: compares execution paths, node transitions, model-visible facts, and outputs.
 - Test export: turns developer-approved expectations into offline regression tests.
 
-The spike should avoid services, message queues, distributed storage, hosted dashboards, and production deployment assumptions.
+The original spike avoided services and message queues. The optional v0.2 Go/Kafka path exists specifically to keep capture publishing off the primary application's synchronous request path; it is still a local development topology, not a production deployment claim.
 
 ## Future Target Architecture
 
@@ -75,7 +75,7 @@ The feasibility implementation keeps extension points at the replay boundary rat
 - `FrameworkAdapter` invokes trusted local subject code with an injected dependency adapter. Framework-specific integrations belong here and must not mutate the capsule.
 - `CapsuleStore` owns local JSON loading and saving. Future storage implementations may change retrieval but must return the immutable captured document unchanged and must not rewrite evidence during reads.
 
-`RedactionScanner` and `EventPublisher` remain documentary boundaries because Day 2 has no runtime consumer for them. A future redaction scanner belongs before persistence and sealing. A future event publisher may observe derived replay events but must never modify, replace, or backfill captured evidence. Hosted transport, Kafka, authentication, and other infrastructure are not part of these interfaces or this milestone.
+`RedactionScanner` remains the boundary for best-effort sanitization before persistence. `EventPublisher` now has direct and optional Kafka-backed consumers. Kafka carries mutable, retryable transport events; the SQLite assembler validates, orders, and deduplicates those events before the existing sealer creates evidence. Publishers and infrastructure must never modify, replace, or backfill a sealed capsule.
 
 The replay CLI loads `MODULE:FUNCTION` runners as trusted local Python code. Importing and executing such a runner has the same authority as running that module directly; capsules must not select untrusted runner code.
 
@@ -144,18 +144,22 @@ TraceForge must treat captured traces as potentially sensitive. During the spike
 - Avoid hosted upload, telemetry, or external sharing.
 - Report unresolved redaction gaps before expanding scope.
 
+## Optional Distributed Ingestion
+
+The v0.2 local stack adds a small Go HTTP gateway and Apache Kafka after the replay feasibility loop passed. Go isolates bounded request validation and non-blocking enqueueing. Kafka decouples the primary application from Python capsule assembly. Delivery is at least once; SQLite provides durable event-id deduplication and ordered per-capture assembly, not exactly-once processing.
+
+W3C Trace Context is propagated from HTTP into Kafka headers and extracted for one worker message at a time. Capture spans cross Go and Python services. Later replay starts a separate trace linked to operational correlation stored in SQLite, never in immutable capsule evidence. See [Local observability](observability.md).
+
+The default core installation and ordinary dashboard image do not require Kafka or OpenTelemetry. The Compose broker/controller combination and local Collector are development-only topologies.
+
 ## Postponed Infrastructure
-
-Kafka is postponed because the spike does not need distributed event streaming. A local capture and replay loop is enough to test the core product risk.
-
-Go is postponed because the first supported developers and client agent are Python-based. Adding another implementation language would increase coordination cost before replay feasibility is proven.
 
 ClickHouse is postponed because the product is not yet a large-scale observability database. Local Replay Capsules and offline tests should prove value before analytical storage is considered.
 
-Terraform, Kubernetes, SaaS authentication, and payments are also postponed because deployment and monetization are not the current risk. Replay feasibility is.
+Terraform, Kubernetes, SaaS authentication, and payments remain postponed. No current verification supports production deployment, scale, or security claims.
 
 ## Layering and Future Placement
 
 Immutable captured evidence belongs to the capsule/domain layer. Validation, sealing, replay, comparison, and regression evaluation may read it but must never repair or rewrite it. Future repair strategies may produce proposals or new derived artifacts only.
 
-The CLI and FastAPI dashboard are application interfaces over the same domain functions. Authentication belongs in API middleware. SQLite currently implements local replay-history summaries without storing or modifying capsule evidence; future databases belong behind storage interfaces. Kafka may later implement `EventPublisher` for derived events. Framework support belongs in optional adapters/plugins. Kubernetes and Terraform remain deployment concerns and cannot change replay semantics.
+The CLI and FastAPI dashboard are application interfaces over the same domain functions. Authentication belongs in API middleware. SQLite implements replay-history summaries plus local Kafka idempotency, assembly, and trace-correlation state without storing telemetry in or modifying capsule evidence; future databases belong behind storage interfaces. Kafka implements the optional `EventPublisher` transport boundary. Framework support belongs in optional adapters/plugins. Kubernetes and Terraform remain deployment concerns and cannot change replay semantics.
