@@ -1,0 +1,7 @@
+# Go ingestion gateway
+
+The Go gateway keeps HTTP capture ingestion isolated from the Python replay engine. It validates bounded JSON requests, sanitizes obvious secret-bearing material, enqueues records asynchronously to Kafka, and returns `202 Accepted` only when the bounded local queue accepts the record. Queue saturation returns `429`; unavailable readiness returns `503`; malformed, oversized, or unsafe requests return `400`, `413`, or `415`.
+
+Kafka delivery failures happen after acceptance and are counted separately. The gateway never flushes Kafka per request. Its shutdown path is bounded. Structured logs contain error types and status, never event payloads.
+
+Run locally with `docker compose -f compose.kafka.yml up --build`. The gateway listens on `127.0.0.1:18080`. `GET /healthz` reports process health; `GET /readyz` reports whether the Kafka-backed queue is accepting work.

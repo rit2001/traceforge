@@ -40,6 +40,8 @@ services:
     volumes:
       - ${TRACEFORGE_DATA_DIR:-./.traceforge-data}:/data
     restart: unless-stopped
+    healthcheck:
+      disable: true
 
   traceforge-api:
     build:
@@ -54,6 +56,45 @@ services:
       - ${TRACEFORGE_DATA_DIR:-./.traceforge-data}:/data
     environment:
       TRACEFORGE_HISTORY_PATH: /data/history.sqlite3
+
+  ingest-gateway:
+    build:
+      context: .
+      dockerfile: services/ingest-gateway/Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317
+    ports:
+      - "127.0.0.1:18080:8080"
+    depends_on:
+      kafka: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    read_only: true
+    tmpfs: [/tmp]
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  otel-collector:
+    profiles: [observability]
+    image: otel/opentelemetry-collector-contrib:0.137.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./services/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+      - "127.0.0.1:8889:8889"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:13133/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
 volumes:
   kafka-data:
