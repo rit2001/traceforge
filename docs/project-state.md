@@ -4,24 +4,26 @@ Last verified date: 2026-07-19.
 
 ## Current Phase
 
-The contract phase is complete, and TraceForge is entering its first feasibility implementation phase. Implementation has not started.
+The contract phase is complete, and TraceForge is in its first feasibility implementation phase. Day 2 implementation is complete.
 
 ## Current Milestone
 
-Minimal validator/sealer.
+Exact replay vertical slice.
 
-This milestone has not started.
+This milestone was completed on 2026-07-19.
 
 ## Completed Milestones
 
 - Documentation foundation: commit `e422aa8`.
 - Replay Capsule v0 contract and structural schema: accepted after adversarial review on 2026-07-19, with JSON Schema meta-validation, two positive validation cases, and ten negative validation cases passing.
+- Minimal validator/sealer: implemented on 2026-07-19 with 21 focused tests passing offline.
+- Exact replay vertical slice: implemented on 2026-07-19 with sequential recorded dependencies, zero-network enforcement, a controlled weather capsule, and a separate regression specification; 33 focused tests pass offline.
 
 ## Repository Status
 
-Documentation and the structural schema exist. Implementation has not started.
+Documentation, the structural schema, a minimal Python package, controlled local replay artifacts, and focused tests exist.
 
-No source-code directories, package metadata, dependency files, Docker files, tests, fixtures, or service infrastructure have been added. No canonicalizer, validator, sealer, replay runtime, tests, or sealed capsule exists.
+The package provides RFC 8785 canonicalization, validation, sealing, sequential recorded dependency playback, exact replay, deterministic comparison, regression evaluation, and `seal`, `validate`, and `replay` CLI commands. A controlled sealed weather capsule and regression specification exist; no live replay, production capture adapter, dashboard, Docker files, or service infrastructure exists.
 
 ## Confirmed Decisions
 
@@ -56,7 +58,7 @@ Go, Kafka, Terraform, Kubernetes, ClickHouse, distributed storage, microservices
 
 ## Exact Next Approved Task
 
-Design the validator/sealer package boundary, algorithms, error model, and acceptance tests. Implementation begins only after the design is understood and approved.
+Review the Day 2 exact replay implementation and results. No Day 3 implementation task is approved yet.
 
 ## Milestone-Boundary Checklist
 

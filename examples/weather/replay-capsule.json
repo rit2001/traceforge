@@ -1,0 +1,150 @@
+{
+  "capsule_id": "weather-kolkata-controlled-v0",
+  "capture": {
+    "kind": "controlled_fixture",
+    "recorded_at": "2026-07-19T00:00:00Z",
+    "run_id": "weather-run-controlled-1"
+  },
+  "dependencies": [
+    {
+      "dependency_id": "model-weather-intent",
+      "duration_ms": 12,
+      "kind": "model",
+      "operation": "generate",
+      "outcome": {
+        "response": {
+          "payload": {
+            "tool_call": {
+              "arguments": {
+                "place": "Kolkata"
+              },
+              "name": "get_weather"
+            }
+          }
+        },
+        "status": "returned"
+      },
+      "request": {
+        "model": "controlled-weather-model",
+        "payload": {
+          "messages": [
+            {
+              "content": "What is the weather in Kolkata, and should I carry an umbrella?",
+              "role": "user"
+            }
+          ]
+        }
+      },
+      "request_fingerprint": "sha256:b421d93f6e96e451833138c705710519137c4d92bef14095869692639220f7b7",
+      "sequence": 1
+    },
+    {
+      "dependency_id": "http-kolkata-geocode",
+      "duration_ms": 18,
+      "kind": "http",
+      "operation": "GET",
+      "outcome": {
+        "response": {
+          "body": {
+            "latitude": 22.5726,
+            "longitude": 88.3639,
+            "place": "Kolkata"
+          },
+          "headers": {
+            "content-type": "application/json"
+          },
+          "status_code": 200
+        },
+        "status": "returned"
+      },
+      "request": {
+        "body": null,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "method": "GET",
+        "url": "https://weather.invalid/geocode?place=Kolkata"
+      },
+      "request_fingerprint": "sha256:c7ce02bf3845663a2d7b677a457e6f81a3c56213ab60daaf37c72c18997dbb32",
+      "sequence": 2
+    },
+    {
+      "dependency_id": "http-kolkata-current",
+      "duration_ms": 21,
+      "kind": "http",
+      "operation": "GET",
+      "outcome": {
+        "response": {
+          "body": {
+            "precipitation_probability": 80,
+            "temperature_c": 29
+          },
+          "headers": {
+            "content-type": "application/json"
+          },
+          "status_code": 200
+        },
+        "status": "returned"
+      },
+      "request": {
+        "body": null,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "method": "GET",
+        "url": "https://weather.invalid/current?latitude=22.5726&longitude=88.3639"
+      },
+      "request_fingerprint": "sha256:9be6c9cafe67b22b18a71b4f5d1d8400684989352e07101aa2204fa258c70a35",
+      "sequence": 3
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "canonicalization": "RFC8785",
+    "digest": "sha256:5df9f23f93bf03ef85fa2742af723ad2e22b3450f944188c56615be235e7dd23",
+    "scope": "entire_capsule_except_integrity.digest"
+  },
+  "invocation": {
+    "input": {
+      "question": "What is the weather in Kolkata, and should I carry an umbrella?"
+    },
+    "operation": "answer_weather_question"
+  },
+  "original_observation": {
+    "error": null,
+    "events": [
+      {
+        "data": {
+          "diagnostic": "controlled original failure"
+        },
+        "event_id": "original-final",
+        "kind": "output",
+        "name": "final_answer",
+        "sequence": 1
+      }
+    ],
+    "execution_status": "completed",
+    "output": {
+      "answer": "Kolkata: 29°C. An umbrella is not needed.",
+      "place": "Kolkata",
+      "temperature_c": 29,
+      "umbrella_needed": false
+    }
+  },
+  "producer": {
+    "name": "traceforge",
+    "version": "0.1.0"
+  },
+  "redaction": {
+    "actions": [],
+    "policy_version": "controlled-fixture-v1",
+    "scan_result": "passed"
+  },
+  "schema_version": "0.1.0",
+  "subject": {
+    "application": "controlled-weather-agent",
+    "framework": "tool-calling",
+    "language": "Python",
+    "revision": "day2"
+  }
+}

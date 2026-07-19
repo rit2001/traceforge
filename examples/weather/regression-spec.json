@@ -1,0 +1,20 @@
+{
+  "assertions": [
+    {
+      "expected": "Kolkata",
+      "operator": "equals",
+      "path": "output.place"
+    },
+    {
+      "expected": true,
+      "operator": "equals",
+      "path": "output.umbrella_needed"
+    },
+    {
+      "expected": "umbrella",
+      "operator": "contains",
+      "path": "output.answer"
+    }
+  ],
+  "version": "0.1.0"
+}

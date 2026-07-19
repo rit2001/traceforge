@@ -67,6 +67,20 @@ Exact replay freezes both model outputs and tool outputs. It checks whether the 
 
 This is the baseline reproducibility check. If exact replay cannot reproduce the captured path, fork replay and test export are not trustworthy.
 
+## Extension Boundaries
+
+The feasibility implementation keeps extension points at the replay boundary rather than inside captured evidence:
+
+- `DependencyAdapter` supplies recorded external outcomes to subject code. The current implementation consumes model and HTTP fixtures sequentially and fails closed; future dependency kinds belong behind this interface.
+- `FrameworkAdapter` invokes trusted local subject code with an injected dependency adapter. Framework-specific integrations belong here and must not mutate the capsule.
+- `CapsuleStore` owns local JSON loading and saving. Future storage implementations may change retrieval but must return the immutable captured document unchanged and must not rewrite evidence during reads.
+
+`RedactionScanner` and `EventPublisher` remain documentary boundaries because Day 2 has no runtime consumer for them. A future redaction scanner belongs before persistence and sealing. A future event publisher may observe derived replay events but must never modify, replace, or backfill captured evidence. Hosted transport, Kafka, authentication, and other infrastructure are not part of these interfaces or this milestone.
+
+The replay CLI loads `MODULE:FUNCTION` runners as trusted local Python code. Importing and executing such a runner has the same authority as running that module directly; capsules must not select untrusted runner code.
+
+Exact replay temporarily patches common Python socket entry points to fail live-network attempts. This guard is process-wide while active and is not safe for unrelated concurrent network work in other threads. It is a feasibility safeguard, not an operating-system sandbox.
+
 ## Fork Replay
 
 Fork replay freezes tool outputs while allowing model or prompt behaviour to run again. This isolates whether a prompt, graph, or model change would behave differently against the same external facts.
