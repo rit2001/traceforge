@@ -42,6 +42,7 @@ secrets/
 artifacts/
 test-artifacts/
 traceforge-demo-output/
+.traceforge-data/
 tmp/
 temp/
 .tox/
