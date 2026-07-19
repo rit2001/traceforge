@@ -23,8 +23,14 @@ type record struct {
 	key   string
 	value []byte
 }
+type client interface {
+	Ping(context.Context) error
+	Produce(context.Context, *kgo.Record, func(*kgo.Record, error))
+	Flush(context.Context) error
+	Close()
+}
 type Kafka struct {
-	client *kgo.Client
+	client client
 	topic  string
 	queue  chan record
 	stop   chan struct{}
@@ -36,9 +42,14 @@ func NewKafka(brokers []string, topic string, size int) (*Kafka, error) {
 	if err != nil {
 		return nil, err
 	}
+	return newKafka(c, topic, size, true), nil
+}
+func newKafka(c client, topic string, size int, start bool) *Kafka {
 	k := &Kafka{client: c, topic: topic, queue: make(chan record, size), stop: make(chan struct{})}
-	go k.run()
-	return k, nil
+	if start {
+		go k.run()
+	}
+	return k
 }
 func (k *Kafka) Enqueue(_ context.Context, key string, value []byte) error {
 	if !k.Ready(context.Background()) {

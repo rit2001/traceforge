@@ -18,7 +18,11 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		slog.Error("invalid configuration", "error_type", "configuration")
+		os.Exit(1)
+	}
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	v, err := events.Load(cfg.SchemaPath)
 	if err != nil {
