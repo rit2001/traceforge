@@ -153,3 +153,9 @@ Go is postponed because the first supported developers and client agent are Pyth
 ClickHouse is postponed because the product is not yet a large-scale observability database. Local Replay Capsules and offline tests should prove value before analytical storage is considered.
 
 Terraform, Kubernetes, SaaS authentication, and payments are also postponed because deployment and monetization are not the current risk. Replay feasibility is.
+
+## Layering and Future Placement
+
+Immutable captured evidence belongs to the capsule/domain layer. Validation, sealing, replay, comparison, and regression evaluation may read it but must never repair or rewrite it. Future repair strategies may produce proposals or new derived artifacts only.
+
+The CLI and FastAPI dashboard are application interfaces over the same domain functions. Authentication belongs in API middleware. SQLite currently implements local replay-history summaries without storing or modifying capsule evidence; future databases belong behind storage interfaces. Kafka may later implement `EventPublisher` for derived events. Framework support belongs in optional adapters/plugins. Kubernetes and Terraform remain deployment concerns and cannot change replay semantics.

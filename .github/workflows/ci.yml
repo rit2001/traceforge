@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install ".[dev,dashboard,langgraph]"
+      - run: ruff format --check src tests
+      - run: ruff check src tests
+      - run: python -m pytest
+      - run: python -m pip wheel . --no-deps --wheel-dir dist
+      - name: Installed-wheel smoke
+        run: |
+          python -m venv /tmp/traceforge-smoke
+          /tmp/traceforge-smoke/bin/pip install dist/traceforge_replay-*.whl
+          cd /tmp
+          /tmp/traceforge-smoke/bin/traceforge --help
+          /tmp/traceforge-smoke/bin/traceforge validate "$GITHUB_WORKSPACE/examples/weather/replay-capsule.json"
+          /tmp/traceforge-smoke/bin/traceforge replay "$GITHUB_WORKSPACE/examples/weather/replay-capsule.json" --runner traceforge.examples.weather_agent:run --spec "$GITHUB_WORKSPACE/examples/weather/regression-spec.json"

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import socket
+from collections.abc import Iterator
 from contextlib import contextmanager
 from threading import RLock
-from typing import Any, Iterator
+from typing import Any
 
 from traceforge.exceptions import LiveDependencyBlockedError
 

@@ -6,6 +6,14 @@ from pathlib import Path
 from typing import Any, Protocol
 
 
+class RedactionScanner(Protocol):
+    """Best-effort sanitization performed before captured data is persisted."""
+
+    policy_version: str
+
+    def scan(self, value: Any, path: str = "$") -> Any: ...
+
+
 class DependencyAdapter(Protocol):
     """Supplies deterministic recorded outcomes to subject code."""
 

@@ -56,9 +56,27 @@ def run(invocation_input: Any, dependencies: DependencyAdapter) -> dict[str, Any
     return {
         "execution_status": "completed",
         "events": [
-            {"event_id": "replay-model", "sequence": 1, "kind": "model", "name": "generate", "data": {"place": place}},
-            {"event_id": "replay-geocode", "sequence": 2, "kind": "tool", "name": "geocode", "data": location},
-            {"event_id": "replay-weather", "sequence": 3, "kind": "tool", "name": "current_weather", "data": facts},
+            {
+                "event_id": "replay-model",
+                "sequence": 1,
+                "kind": "model",
+                "name": "generate",
+                "data": {"place": place},
+            },
+            {
+                "event_id": "replay-geocode",
+                "sequence": 2,
+                "kind": "tool",
+                "name": "geocode",
+                "data": location,
+            },
+            {
+                "event_id": "replay-weather",
+                "sequence": 3,
+                "kind": "tool",
+                "name": "current_weather",
+                "data": facts,
+            },
         ],
         "output": {
             "place": place,

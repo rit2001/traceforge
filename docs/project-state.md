@@ -4,11 +4,11 @@ Last verified date: 2026-07-19.
 
 ## Current Phase
 
-The contract phase is complete, and TraceForge is in its first feasibility implementation phase. Day 2 implementation is complete.
+The contract, feasibility implementation, and experimental MVP product-completion phases are complete.
 
 ## Current Milestone
 
-Exact replay vertical slice.
+Experimental local MVP product-completion pass.
 
 This milestone was completed on 2026-07-19.
 
@@ -18,12 +18,13 @@ This milestone was completed on 2026-07-19.
 - Replay Capsule v0 contract and structural schema: accepted after adversarial review on 2026-07-19, with JSON Schema meta-validation, two positive validation cases, and ten negative validation cases passing.
 - Minimal validator/sealer: implemented on 2026-07-19 with 21 focused tests passing offline.
 - Exact replay vertical slice: implemented on 2026-07-19 with sequential recorded dependencies, zero-network enforcement, a controlled weather capsule, and a separate regression specification; 33 focused tests pass offline.
+- Product-completion implementation: pytest export, capture/redaction SDK, optional LangGraph integration, local FastAPI/SQLite dashboard, Docker packaging, CI, and public documentation completed on 2026-07-19 with 43 tests passing. Ruff, compile, JSON, wheel, clean-install, installed CLI, generated-test, and dashboard-health checks passed; Docker build verification was skipped because the local daemon was unavailable.
 
 ## Repository Status
 
-Documentation, the structural schema, a minimal Python package, controlled local replay artifacts, and focused tests exist.
+Documentation, the structural schema, the `traceforge-replay` distribution, controlled local replay artifacts, and focused tests exist.
 
-The package provides RFC 8785 canonicalization, validation, sealing, sequential recorded dependency playback, exact replay, deterministic comparison, regression evaluation, and `seal`, `validate`, and `replay` CLI commands. A controlled sealed weather capsule and regression specification exist; no live replay, production capture adapter, dashboard, Docker files, or service infrastructure exists.
+The package provides capture with best-effort redaction, sealing, validation, exact replay, deterministic comparison, regression evaluation/export, one optional LangGraph adapter, and `seal`, `validate`, `replay`, `export-pytest`, and `serve` commands. The local dashboard stores replay summaries in SQLite. No fork replay, live replay, production capture integration, hosted service, authentication, Kafka, Kubernetes, or Terraform exists.
 
 ## Confirmed Decisions
 
@@ -58,7 +59,7 @@ Go, Kafka, Terraform, Kubernetes, ClickHouse, distributed storage, microservices
 
 ## Exact Next Approved Task
 
-Review the Day 2 exact replay implementation and results. No Day 3 implementation task is approved yet.
+Review the experimental MVP and approve any next milestone before further implementation.
 
 ## Milestone-Boundary Checklist
 

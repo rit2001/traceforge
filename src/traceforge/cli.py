@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from traceforge.exceptions import TraceForgeError
+from traceforge.export import export_pytest
 from traceforge.replay import load_runner, replay_exact
 from traceforge.sealing import seal_capsule
 from traceforge.store import JsonFileCapsuleStore
@@ -31,6 +32,17 @@ def _parser() -> argparse.ArgumentParser:
     replay.add_argument("capsule", type=Path, metavar="CAPSULE")
     replay.add_argument("--runner", required=True, metavar="MODULE:FUNCTION")
     replay.add_argument("--spec", required=True, type=Path, metavar="REGRESSION_SPEC")
+
+    export = commands.add_parser("export-pytest", help="export an approved replay as pytest")
+    export.add_argument("capsule", type=Path, metavar="CAPSULE")
+    export.add_argument("--runner", required=True, metavar="MODULE:FUNCTION")
+    export.add_argument("--spec", required=True, type=Path, metavar="REGRESSION_SPEC")
+    export.add_argument("--output", required=True, type=Path, metavar="TEST_FILE")
+    export.add_argument("--force", action="store_true")
+
+    serve = commands.add_parser("serve", help="serve the local replay dashboard")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", default=8000, type=int)
     return parser
 
 
@@ -45,6 +57,22 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "validate":
             validate_capsule(_STORE.load(args.capsule))
             print("valid")
+            return 0
+
+        if args.command == "export-pytest":
+            export_pytest(args.capsule, args.runner, args.spec, args.output, force=args.force)
+            return 0
+
+        if args.command == "serve":
+            import uvicorn
+
+            from traceforge.web import create_app
+
+            uvicorn.run(
+                create_app(Path.cwd() / ".traceforge-history.sqlite3"),
+                host=args.host,
+                port=args.port,
+            )
             return 0
 
         result = replay_exact(

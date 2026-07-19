@@ -1,52 +1,108 @@
 # TraceForge
 
-TraceForge captures a failed AI-agent execution, freezes its external dependencies, enables exact and forked replay, compares execution paths, and converts developer-approved expected behaviour into a regression test.
+TraceForge turns a failed Python agent run into immutable, offline replay evidence and a developer-approved regression test.
 
-## Current Status
+> **Status:** experimental local MVP. TraceForge is not production telemetry, production-grade security, or evidence of production adoption.
 
-TraceForge is an experimental, replay-first developer-tool project. The current work is a feasibility spike, not a production system, hosted service, LangSmith replacement, generic observability dashboard, or automatic-fix platform.
+## Failure → regression test
 
-Initial support is intentionally narrow:
+```mermaid
+flowchart LR
+  A[Failed local agent run] --> B[Capture + best-effort sanitize]
+  B --> C[Seal Replay Capsule]
+  C --> D[Validate integrity]
+  D --> E[Exact replay with recorded dependencies]
+  E --> F[Compare observations]
+  F --> G[Evaluate separate approved spec]
+  G --> H[Export offline pytest]
+```
 
-- Python agents only.
-- LangGraph and tool-calling agents first.
-- Local-only execution.
-- Unit and CI tests are fully offline by default.
-- No real API calls in the initial test suite.
-- No copied application code or secrets from client applications.
+Captured evidence stays immutable. Model and HTTP outcomes are replayed in sequence, request identities must match, and missing or unexpected fixtures fail closed without live fallback. Desired behaviour lives in a separate regression specification.
 
-## Core Workflow
+## Five-minute quick start
 
-1. Capture a failed local AI-agent execution.
-2. Build a Replay Capsule containing the inputs, agent graph metadata, prompts, model responses, tool calls, tool outputs, and relevant execution metadata.
-3. Run exact replay to reproduce the captured path using frozen model and tool outputs.
-4. Run fork replay to hold tool outputs fixed while re-running the model or prompt, either with an offline fake or recorded adapter for regression checks or with an explicitly configured live model for opt-in experiments.
-5. Compare the original, exact replay, and fork replay paths.
-6. Let the developer approve expected behaviour.
-7. Export approved expectations as an offline regression test.
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev,dashboard,langgraph]"
+ruff format --check src tests
+ruff check src tests
+pytest
+traceforge validate examples/weather/replay-capsule.json
+traceforge replay examples/weather/replay-capsule.json \
+  --runner traceforge.examples.weather_agent:run \
+  --spec examples/weather/regression-spec.json
+```
 
-## Exact Replay Versus Fork Replay
+Run the complete offline capture demonstration:
 
-Exact replay freezes model outputs and tool outputs. Its purpose is reproducibility: the same captured execution should be replayable without depending on live services.
+```bash
+python -m traceforge.examples.end_to_end
+```
 
-Fork replay freezes tool outputs but runs the model or prompt again. Its purpose is controlled exploration: developers can see whether a prompt, graph, or model change would behave differently against the same external facts.
+It captures a controlled failed LangGraph weather run, sanitizes and seals it, validates integrity, replays recorded model/geocoding/weather outcomes, evaluates umbrella expectations, exports pytest, and runs the generated test without external calls.
 
-Offline fork replay uses fake or recorded model adapters and recorded tool responses. It can validate replay-engine mechanics, but it cannot prove that a new prompt improves real model behaviour. Live fork experiments use a real explicitly configured model with recorded tool outputs. They are opt-in, may consume API quota, and must never run silently in default CI.
+## CLI
 
-Deterministic offline regression checks and probabilistic live evaluations are separate activities. Prompt-quality claims require measured live evaluation results.
+```bash
+traceforge seal draft.json --output capsule.json
+traceforge validate capsule.json
+traceforge replay capsule.json --runner package.module:function --spec regression.json
+traceforge export-pytest capsule.json --runner package.module:function \
+  --spec regression.json --output test_regression.py
+traceforge serve --host 127.0.0.1 --port 8000
+```
 
-## Explicit Non-Goals
+`MODULE:FUNCTION` is trusted local Python code and executes with the current process's authority. The dashboard never accepts arbitrary runner imports; it executes registered examples only.
 
-- TraceForge does not guarantee automatic fixes.
-- TraceForge does not claim to eliminate hallucinations.
-- TraceForge is not a LangSmith replacement.
-- TraceForge is not a generic observability dashboard.
-- TraceForge is not starting with SaaS authentication, payments, team management, or hosted storage.
-- TraceForge is not starting with Go, Kafka, Terraform, Kubernetes, ClickHouse, or other infrastructure-heavy components.
-- TraceForge will not fabricate benchmarks, users, reliability claims, or production-readiness claims.
+## Local dashboard
 
-## Five-Day Feasibility Spike Status
+Install `.[dashboard]`, run `traceforge serve`, and open <http://127.0.0.1:8000>. The dashboard validates capsules, shows dependency timelines and original/replay observations, evaluates assertions, and stores append-only replay summaries in local SQLite.
 
-The first milestone is a five-day feasibility spike around replaying a controlled local LangGraph weather-agent failure using the separate existing Agentic-chatbot repository as the system under test. A genuine production failure may be used later if one is explicitly supplied, but the initial fixture must not be described as a production incident. The spike must not copy application code or secrets from that repository, must not inspect or create `.env` files, and must prove the replay loop through offline tests before broader architecture work begins.
+Screenshot placeholders:
 
-The spike is not complete yet. The project should not add production infrastructure or generalized platform features until the replay feasibility question has been measured.
+- `docs/images/dashboard-empty.png` — capture at 1440×900 immediately after opening a fresh dashboard database.
+- `docs/images/dashboard-replay.png` — upload `examples/weather/replay-capsule.json` and `regression-spec.json`, run `controlled-weather`, then capture at 1440×900.
+- `docs/images/dashboard-mobile.png` — repeat the replay at a 390×844 responsive viewport.
+
+No screenshots are fabricated in this repository.
+
+## Weather demonstration
+
+The controlled capsule records a model request for Kolkata, a geocoding response, and current-weather facts. Its original observation keeps incorrect “no umbrella” advice as evidence. Replay executes formatting and umbrella reasoning again, produces corrected advice, and passes a separate specification. Reserved `.invalid` URLs are identities only; no API key or network call is used.
+
+## Security model and limitations
+
+- Capture applies a versioned best-effort scanner before persistence, removing known credential keys, unsafe HTTP headers, and known secret query parameters.
+- A passed scan records process completion, not a mathematical guarantee that a capsule is safe.
+- Exact replay uses a process-wide Python socket guard, not an OS sandbox; unrelated concurrent network work is unsafe while it is active.
+- Dashboard uploads are size-limited JSON and runners are allow-listed, but the dashboard has no authentication and should bind locally.
+- Generated runners and CLI runner imports are trusted code.
+- Review capsules before sharing or committing them. Never capture credentials or unreviewed production traces.
+
+See [SECURITY.md](SECURITY.md) and the [Replay Capsule contract](docs/contracts/replay-capsule-v0.md).
+
+## Extension map
+
+- Authentication: FastAPI middleware, without changing replay domain code.
+- Kafka: a future `EventPublisher`; it cannot mutate captured evidence.
+- Frameworks: optional `FrameworkAdapter` plugins; only LangGraph is implemented now.
+- Stronger scanning: future `RedactionScanner` implementations before sealing.
+- Repair experiments: may read evidence and propose changes, never rewrite evidence; automatic fixing is not guaranteed.
+- Distributed tracing and databases: future capture/storage adapters when measured need exists.
+- Kubernetes and Terraform: deployment concerns only after local value and operational requirements are demonstrated.
+
+## Docker
+
+```bash
+docker build -t traceforge-replay .
+docker run --rm -p 8000:8000 traceforge-replay
+```
+
+The image runs as a non-root user and checks `/healthz`.
+
+## Name notice
+
+Unrelated projects already use the name “TraceForge.” This experimental project is not affiliated with them. The distribution is named `traceforge-replay`; the Python package, CLI, and project branding remain `traceforge`.
+
+TraceForge does not guarantee automatic fixes, eliminate hallucinations, or provide benchmark or production reliability claims.

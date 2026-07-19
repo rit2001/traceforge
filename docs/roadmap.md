@@ -4,6 +4,12 @@ TraceForge uses evidence-based stage gates. Stages advance only when the exit cr
 
 Go, Kafka, Terraform, Kubernetes, distributed storage, and microservices remain postponed until measured replay needs require them.
 
+## Current Implementation Evidence
+
+As of 2026-07-19, documentation and Replay Capsule v0, validation/sealing, exact offline replay, separate regression evaluation, pytest export, best-effort capture/redaction, one optional LangGraph integration, and a local FastAPI/SQLite dashboard are implemented and tested with controlled local data. Fork replay, real Agentic-chatbot integration, measured live experiments, hosted services, and production hardening are not complete.
+
+The local dashboard is an MVP inspection surface, not evidence that Stage 7 service-infrastructure criteria are met. Docker and CI package the local product; Kafka, Kubernetes, Terraform, distributed storage, SaaS authentication, and payments remain postponed.
+
 ## Stage 0: Documentation and Feasibility Definition
 
 Entry criteria:

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
 from importlib import import_module
-from typing import Any, Callable
+from typing import Any
 
 from traceforge.dependencies import RecordedDependencyAdapter
 from traceforge.exceptions import SemanticValidationError
@@ -56,7 +57,9 @@ def load_runner(reference: str) -> CallableFrameworkAdapter:
     try:
         runner = getattr(import_module(module_name), function_name)
     except (ImportError, AttributeError) as exc:
-        raise SemanticValidationError(f"cannot load trusted local runner {reference!r}: {exc}") from exc
+        raise SemanticValidationError(
+            f"cannot load trusted local runner {reference!r}: {exc}"
+        ) from exc
     if not callable(runner):
         raise SemanticValidationError(f"trusted local runner {reference!r} is not callable")
     return CallableFrameworkAdapter(runner)
@@ -100,8 +103,7 @@ def replay_exact(
         original_observation=original_observation,
         replay_observation=deepcopy(replay_observation),
         deterministic_match=(
-            _without_diagnostics(original_observation)
-            == _without_diagnostics(replay_observation)
+            _without_diagnostics(original_observation) == _without_diagnostics(replay_observation)
         ),
         regression=regression,
     )

@@ -36,7 +36,9 @@ def _schema() -> dict[str, Any]:
         schema = json.loads(path.read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(schema)
     except (OSError, json.JSONDecodeError, SchemaError) as exc:
-        raise StructuralValidationError(f"cannot load Replay Capsule schema at {path}: {exc}") from exc
+        raise StructuralValidationError(
+            f"cannot load Replay Capsule schema at {path}: {exc}"
+        ) from exc
     return schema
 
 

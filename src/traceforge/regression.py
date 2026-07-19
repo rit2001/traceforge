@@ -41,7 +41,9 @@ def evaluate_regression(observation: dict[str, Any], spec: Any) -> RegressionRes
         raise SemanticValidationError("regression specification version must be '0.1.0'")
     assertions = spec.get("assertions")
     if not isinstance(assertions, list) or not assertions:
-        raise SemanticValidationError("regression specification assertions must be a non-empty array")
+        raise SemanticValidationError(
+            "regression specification assertions must be a non-empty array"
+        )
 
     results: list[AssertionResult] = []
     for index, assertion in enumerate(assertions):

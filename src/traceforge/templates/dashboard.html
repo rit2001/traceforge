@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TraceForge Replay</title>
+  <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+  <main>
+    <header><p class="eyebrow">LOCAL REPLAY WORKBENCH</p><h1>TraceForge</h1><p>Validate immutable evidence, replay recorded dependencies, and inspect approved behaviour.</p></header>
+    <section class="panel controls">
+      <label>Registered runner<select id="runner">{% for runner in runners %}<option>{{ runner }}</option>{% endfor %}</select></label>
+      <label>Capsule JSON<input id="capsule-file" type="file" accept="application/json"><textarea id="capsule" placeholder="Paste or upload a sealed capsule"></textarea></label>
+      <label>Regression specification<input id="spec-file" type="file" accept="application/json"><textarea id="spec" placeholder="Paste or upload a regression specification"></textarea></label>
+      <button id="run">Validate &amp; replay</button><p id="status" role="status"></p>
+    </section>
+    <section id="result" class="grid empty"><div class="panel"><h2>Empty state</h2><p>Choose local JSON artifacts to inspect invocation, dependency timeline, observations, comparison, and assertions.</p></div></section>
+    <section class="panel"><h2>Replay history</h2>{% if history %}<div class="timeline">{% for item in history %}<article><strong>{{ item.technical_result }}</strong><span>{{ item.runner }}</span><small>{{ item.created_at }}</small>{% if item.error_summary %}<p class="error">{{ item.error_summary }}</p>{% endif %}</article>{% endfor %}</div>{% else %}<p>No local replays yet.</p>{% endif %}</section>
+  </main>
+<script>
+const readFile = (input, target) => input.addEventListener('change', async () => { target.value = await input.files[0].text(); });
+readFile(document.querySelector('#capsule-file'), document.querySelector('#capsule'));
+readFile(document.querySelector('#spec-file'), document.querySelector('#spec'));
+document.querySelector('#run').addEventListener('click', async () => {
+  const status = document.querySelector('#status'); const result = document.querySelector('#result');
+  try {
+    status.textContent = 'Running offline replay…';
+    const response = await fetch('/api/replay', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({runner:document.querySelector('#runner').value, capsule:JSON.parse(document.querySelector('#capsule').value), spec:JSON.parse(document.querySelector('#spec').value)})});
+    const data = await response.json(); if (!response.ok) throw new Error(data.error);
+    const sections = [['Invocation', data.invocation], ['Dependency timeline', data.dependencies], ['Original observation', data.original_observation], ['Replay observation', data.replay_observation], ['Comparison', data.comparison], ['Behavioural assertions', data.regression]];
+    result.className = 'grid'; result.replaceChildren();
+    for (const [name,value] of sections) { const article=document.createElement('article'); article.className='panel'; const heading=document.createElement('h2'); heading.textContent=name; const pre=document.createElement('pre'); pre.textContent=JSON.stringify(value,null,2); article.append(heading,pre); result.append(article); }
+    status.textContent = 'Replay complete.';
+  } catch (error) { result.className='grid'; result.replaceChildren(); const article=document.createElement('article'); article.className='panel error'; const heading=document.createElement('h2'); heading.textContent='Replay failed'; const message=document.createElement('p'); message.textContent=error.message; article.append(heading,message); result.append(article); status.textContent=''; }
+});
+</script>
+</body>
+</html>
