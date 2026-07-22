@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -43,6 +44,21 @@ def _parser() -> argparse.ArgumentParser:
     serve = commands.add_parser("serve", help="serve the local replay dashboard")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", default=8000, type=int)
+
+    worker = commands.add_parser("worker", help="run an asynchronous capture worker")
+    worker_commands = worker.add_subparsers(dest="worker_kind", required=True)
+    kafka_worker = worker_commands.add_parser("kafka")
+    kafka_worker.add_argument("--bootstrap-servers", required=True)
+    kafka_worker.add_argument("--topic", default="traceforge.capture.v1")
+    kafka_worker.add_argument("--dlq-topic", default="traceforge.capture.dlq.v1")
+    kafka_worker.add_argument("--group-id", default="traceforge-assembler-v1")
+    kafka_worker.add_argument("--database", required=True, type=Path)
+    kafka_worker.add_argument("--capsule-directory", required=True, type=Path)
+
+    smoke = commands.add_parser("kafka-smoke", help="run a bounded real-Kafka smoke capture")
+    smoke.add_argument("--bootstrap-servers", required=True)
+    smoke.add_argument("--database", required=True, type=Path)
+    smoke.add_argument("--capsule-directory", required=True, type=Path)
     return parser
 
 
@@ -66,13 +82,44 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "serve":
             import uvicorn
 
+            from traceforge.observability import configure, shutdown
             from traceforge.web import create_app
 
-            uvicorn.run(
-                create_app(Path.cwd() / ".traceforge-history.sqlite3"),
-                host=args.host,
-                port=args.port,
-            )
+            telemetry_provider = configure("traceforge-api")
+            try:
+                uvicorn.run(
+                    create_app(
+                        Path(
+                            os.environ.get(
+                                "TRACEFORGE_HISTORY_PATH",
+                                str(Path.cwd() / ".traceforge-history.sqlite3"),
+                            )
+                        )
+                    ),
+                    host=args.host,
+                    port=args.port,
+                )
+            finally:
+                shutdown(telemetry_provider)
+            return 0
+
+        if args.command == "worker":
+            from traceforge.kafka_runtime import create_worker
+
+            create_worker(
+                args.bootstrap_servers,
+                args.topic,
+                args.dlq_topic,
+                args.group_id,
+                args.database,
+                args.capsule_directory,
+            ).run()
+            return 0
+
+        if args.command == "kafka-smoke":
+            from traceforge.kafka_runtime import kafka_smoke
+
+            print(kafka_smoke(args.bootstrap_servers, args.database, args.capsule_directory))
             return 0
 
         result = replay_exact(

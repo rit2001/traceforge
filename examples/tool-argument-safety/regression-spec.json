@@ -1,0 +1,15 @@
+{
+  "assertions": [
+    {
+      "expected": "approved",
+      "operator": "equals",
+      "path": "output.decision"
+    },
+    {
+      "expected": "refund-demo-1",
+      "operator": "equals",
+      "path": "output.reference"
+    }
+  ],
+  "version": "0.1.0"
+}

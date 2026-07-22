@@ -14,6 +14,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 coverage.xml
+coverage.out
 htmlcov/
 build/
 dist/
@@ -42,6 +43,7 @@ secrets/
 artifacts/
 test-artifacts/
 traceforge-demo-output/
+.traceforge-data/
 tmp/
 temp/
 .tox/

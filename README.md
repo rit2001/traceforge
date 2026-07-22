@@ -2,6 +2,8 @@
 
 TraceForge turns a failed Python agent run into immutable, offline replay evidence and a developer-approved regression test.
 
+New contributors and AI agents should read [PROJECT_MEMORY.md](PROJECT_MEMORY.md) and [docs/start-here.md](docs/start-here.md) before architectural or implementation work.
+
 > **Status:** experimental local MVP. TraceForge is not production telemetry, production-grade security, or evidence of production adoption.
 
 ## Failure → regression test
@@ -42,6 +44,8 @@ python -m traceforge.examples.end_to_end
 
 It captures a controlled failed LangGraph weather run, sanitizes and seals it, validates integrity, replays recorded model/geocoding/weather outcomes, evaluates umbrella expectations, exports pytest, and runs the generated test without external calls.
 
+TraceForge also includes controlled [RAG citation-grounding](examples/rag-citation/) and [tool-argument-safety](examples/tool-argument-safety/) examples. See the [five-minute orientation](docs/start-here.md) for subsystem and distributed-stack navigation.
+
 ## CLI
 
 ```bash
@@ -59,13 +63,7 @@ traceforge serve --host 127.0.0.1 --port 8000
 
 Install `.[dashboard]`, run `traceforge serve`, and open <http://127.0.0.1:8000>. The dashboard validates capsules, shows dependency timelines and original/replay observations, evaluates assertions, and stores append-only replay summaries in local SQLite.
 
-Screenshot placeholders:
-
-- `docs/images/dashboard-empty.png` — capture at 1440×900 immediately after opening a fresh dashboard database.
-- `docs/images/dashboard-replay.png` — upload `examples/weather/replay-capsule.json` and `regression-spec.json`, run `controlled-weather`, then capture at 1440×900.
-- `docs/images/dashboard-mobile.png` — repeat the replay at a 390×844 responsive viewport.
-
-No screenshots are fabricated in this repository.
+No dashboard screenshots are stored in this repository. Future screenshots must come from a real local run, contain only controlled data, and be reviewed before they are linked here.
 
 ## Weather demonstration
 
@@ -85,12 +83,18 @@ See [SECURITY.md](SECURITY.md) and the [Replay Capsule contract](docs/contracts/
 ## Extension map
 
 - Authentication: FastAPI middleware, without changing replay domain code.
-- Kafka: a future `EventPublisher`; it cannot mutate captured evidence.
+- Kafka: an optional local `EventPublisher` and Go gateway/worker path; transport events remain mutable and cannot mutate sealed evidence.
 - Frameworks: optional `FrameworkAdapter` plugins; only LangGraph is implemented now.
 - Stronger scanning: future `RedactionScanner` implementations before sealing.
 - Repair experiments: may read evidence and propose changes, never rewrite evidence; automatic fixing is not guaranteed.
 - Distributed tracing and databases: future capture/storage adapters when measured need exists.
 - Kubernetes and Terraform: deployment concerns only after local value and operational requirements are demonstrated.
+
+## Optional local distributed ingestion
+
+The development-only Compose topology runs a Go HTTP gateway, single-node Kafka, Python assembly worker, and local API. The optional observability profile adds a local OpenTelemetry Collector. Start with [docs/start-here.md](docs/start-here.md); use [docs/operations/](docs/operations/) for bounded startup, shutdown, and failure triage.
+
+This path is at least once and uses SQLite event-ID deduplication; it does not provide exactly-once processing or a production deployment.
 
 ## Docker
 

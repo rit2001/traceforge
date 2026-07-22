@@ -2,13 +2,13 @@
 
 TraceForge uses evidence-based stage gates. Stages advance only when the exit criteria are met, not because a deadline elapsed.
 
-Go, Kafka, Terraform, Kubernetes, distributed storage, and microservices remain postponed until measured replay needs require them.
+The replay feasibility loop passed and an optional local Go/Kafka/Collector v0.2 path was implemented on a dedicated branch. Terraform, Kubernetes, distributed storage, and additional microservices remain postponed until measured needs and a separately approved milestone require them.
 
 ## Current Implementation Evidence
 
 As of 2026-07-19, documentation and Replay Capsule v0, validation/sealing, exact offline replay, separate regression evaluation, pytest export, best-effort capture/redaction, one optional LangGraph integration, and a local FastAPI/SQLite dashboard are implemented and tested with controlled local data. Fork replay, real Agentic-chatbot integration, measured live experiments, hosted services, and production hardening are not complete.
 
-The local dashboard is an MVP inspection surface, not evidence that Stage 7 service-infrastructure criteria are met. Docker and CI package the local product; Kafka, Kubernetes, Terraform, distributed storage, SaaS authentication, and payments remain postponed.
+The local dashboard is an MVP inspection surface, not evidence that production service-infrastructure criteria are met. Docker and CI package the local product; the optional single-node Kafka/Go/Collector topology is development evidence only. Kubernetes, Terraform, distributed storage, SaaS authentication, and payments remain postponed.
 
 ## Stage 0: Documentation and Feasibility Definition
 
@@ -163,6 +163,6 @@ Exit criteria:
 
 Non-goals:
 
-- Adding Kafka, Kubernetes, ClickHouse, Terraform, distributed storage, or microservices by default.
+- Treating the approved local Go/Kafka/Collector experiment as authorization for Kubernetes, ClickHouse, Terraform, distributed storage, or more microservices.
 - SaaS authentication or payments before a product need is demonstrated.
 - Rebranding TraceForge as a generic observability dashboard.

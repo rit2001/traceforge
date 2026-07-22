@@ -1,0 +1,91 @@
+{
+  "capsule_id": "capsule-tool-safety-1",
+  "capture": {
+    "kind": "controlled_fixture",
+    "recorded_at": "2026-07-19T12:05:00Z",
+    "run_id": "run-refund-1"
+  },
+  "dependencies": [
+    {
+      "dependency_id": "dependency-1",
+      "duration_ms": 0,
+      "kind": "http",
+      "operation": "POST",
+      "outcome": {
+        "response": {
+          "body": {
+            "decision": "approved",
+            "reference": "refund-demo-1"
+          },
+          "headers": {
+            "content-type": "application/json"
+          },
+          "status_code": 200
+        },
+        "status": "returned"
+      },
+      "request": {
+        "body": {
+          "amount_cents": 5000,
+          "currency": "USD",
+          "customer_ref": "customer-demo-17"
+        },
+        "headers": {
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "url": "https://payments.invalid/refunds"
+      },
+      "request_fingerprint": "sha256:7f64cf2a5573596bdf181764dc6c3c4a736d6f0b966825104511acd4b656f57c",
+      "sequence": 1
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "canonicalization": "RFC8785",
+    "digest": "sha256:30759319907ec5bbb71920be4af5b1134f19983ae9f85506da1ae88a238d103f",
+    "scope": "entire_capsule_except_integrity.digest"
+  },
+  "invocation": {
+    "input": {
+      "amount_cents": 5000,
+      "customer_ref": "customer-demo-17"
+    },
+    "operation": "approve_refund"
+  },
+  "original_observation": {
+    "error": null,
+    "events": [
+      {
+        "data": {
+          "matched": true
+        },
+        "event_id": "event-1",
+        "kind": "safety",
+        "name": "argument_check",
+        "sequence": 1
+      }
+    ],
+    "execution_status": "completed",
+    "output": {
+      "decision": "blocked",
+      "reason": "request identity was not verified"
+    }
+  },
+  "producer": {
+    "name": "traceforge-examples",
+    "version": "0.2.0"
+  },
+  "redaction": {
+    "actions": [],
+    "policy_version": "best-effort-v1",
+    "scan_result": "passed"
+  },
+  "schema_version": "0.1.0",
+  "subject": {
+    "application": "refund-agent",
+    "framework": "tool-calling",
+    "language": "Python",
+    "revision": "safety-boundary"
+  }
+}

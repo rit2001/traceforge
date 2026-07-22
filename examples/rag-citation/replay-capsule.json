@@ -1,0 +1,94 @@
+{
+  "capsule_id": "capsule-rag-citation-1",
+  "capture": {
+    "kind": "controlled_fixture",
+    "recorded_at": "2026-07-19T12:00:00Z",
+    "run_id": "run-rag-1"
+  },
+  "dependencies": [
+    {
+      "dependency_id": "dependency-1",
+      "duration_ms": 0,
+      "kind": "http",
+      "operation": "POST",
+      "outcome": {
+        "response": {
+          "body": {
+            "passages": [
+              {
+                "source_id": "policy-7",
+                "text": "Records are retained for 30 days."
+              }
+            ]
+          },
+          "headers": {
+            "content-type": "application/json"
+          },
+          "status_code": 200
+        },
+        "status": "returned"
+      },
+      "request": {
+        "body": {
+          "query": "What is the archive retention period?"
+        },
+        "headers": {
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "url": "https://retrieval.invalid/search"
+      },
+      "request_fingerprint": "sha256:00677ea9cd5996221f02d0f352bc02bf0bb7f3e666d7e567a117b5c151cbdcfa",
+      "sequence": 1
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "canonicalization": "RFC8785",
+    "digest": "sha256:d1760bb99f5ef147ae136ee6e1d2857d15b62ad033a263e539703b0204131f1b",
+    "scope": "entire_capsule_except_integrity.digest"
+  },
+  "invocation": {
+    "input": {
+      "claim": "Records are retained for 90 days."
+    },
+    "operation": "answer_with_citation"
+  },
+  "original_observation": {
+    "error": null,
+    "events": [
+      {
+        "data": {
+          "grounded": false,
+          "source_id": "policy-7"
+        },
+        "event_id": "event-1",
+        "kind": "verification",
+        "name": "citation_grounding",
+        "sequence": 1
+      }
+    ],
+    "execution_status": "completed",
+    "output": {
+      "answer": "Records are retained for 90 days.",
+      "citation": "policy-7",
+      "grounded": false
+    }
+  },
+  "producer": {
+    "name": "traceforge-examples",
+    "version": "0.2.0"
+  },
+  "redaction": {
+    "actions": [],
+    "policy_version": "best-effort-v1",
+    "scan_result": "passed"
+  },
+  "schema_version": "0.1.0",
+  "subject": {
+    "application": "citation-assistant",
+    "framework": "tool-calling",
+    "language": "Python",
+    "revision": "grounding-fix"
+  }
+}

@@ -4,7 +4,7 @@ WORKDIR /build
 COPY pyproject.toml ./
 COPY schemas ./schemas
 COPY src ./src
-RUN python -m pip wheel --wheel-dir /wheels ".[dashboard]"
+RUN python -m pip wheel --wheel-dir /wheels ".[dashboard,kafka]"
 
 FROM python:3.12-slim AS runtime
 
@@ -13,7 +13,7 @@ RUN useradd --create-home --uid 10001 traceforge
 WORKDIR /app
 RUN chown traceforge:traceforge /app
 COPY --from=builder /wheels /wheels
-RUN python -m pip install --no-cache-dir --no-index --find-links=/wheels "traceforge-replay[dashboard]" \
+RUN python -m pip install --no-cache-dir --no-index --find-links=/wheels "traceforge-replay[dashboard,kafka]" \
     && rm -rf /wheels
 USER traceforge
 EXPOSE 8000
