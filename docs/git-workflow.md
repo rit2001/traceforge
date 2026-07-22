@@ -1,6 +1,6 @@
 # Git Workflow
 
-This workflow keeps experimental evidence and implementation changes reviewable. The currently documented branch is `feat/distributed-ingestion-v0.2`.
+This workflow keeps experimental evidence and implementation changes reviewable. The currently documented branch is `feat/kubernetes-local-v0.3`.
 
 ## Branches
 
@@ -37,4 +37,4 @@ CI passing proves only the tested repository scope. It does not authorize or sub
 
 ## Current Branch
 
-`feat/distributed-ingestion-v0.2` contains the optional local Go/Kafka ingestion and cross-service observability milestones plus this documentation-memory milestone. It is not evidence that the branch has merged to `main`, shipped as a release, or completed production hardening.
+`feat/kubernetes-local-v0.3` contains the approved local kind/Kustomize deployment gate over the existing Go/Kafka/Python/Collector stack. It is not evidence that the branch has merged to `main`, shipped as a release, deployed to a cloud, or completed production hardening.

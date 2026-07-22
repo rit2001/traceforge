@@ -13,6 +13,7 @@ This is an initial security model for the local feasibility spike. It is not a p
 - Python worker and SQLite assembly state: order/deduplicate events and seal capsules; operational correlation remains outside evidence.
 - FastAPI dashboard: unauthenticated local interface with allow-listed runners and size-bounded uploads.
 - OpenTelemetry Collector: optional unencrypted/unauthenticated local diagnostic endpoint; it is not an evidence store or approved external export path.
+- Local kind cluster: schedules the existing containers with non-root identities, dropped capabilities, RuntimeDefault seccomp, resource bounds, and local PVC storage; it is not a production security boundary or multi-tenant environment.
 
 ## Capsule Data Risks
 
@@ -57,7 +58,7 @@ A fixture is safe for TraceForge only if:
 
 ## Local-First Assumptions
 
-The implementation assumes local execution, local files, offline default tests, and no hosted upload. The optional Go/Kafka/Collector Compose topology binds host ports to loopback and remains development-only. Live model use is separate, opt-in, unimplemented in the current replay surface, and outside default CI.
+The implementation assumes local execution, local files, offline default tests, and no hosted upload. The optional Go/Kafka/Collector Compose topology binds host ports to loopback and remains development-only. The kind topology exposes no LoadBalancer or Ingress and relies on explicit loopback `kubectl port-forward`. It uses ConfigMaps only for non-sensitive values and creates no fake or empty Secret objects. Live model use is separate, opt-in, unimplemented in the current replay surface, and outside default CI.
 
 Telemetry must not contain capture payloads, dependency responses, credentials, authorization material, raw user messages, or high-cardinality identifiers in metric labels. Trace and span identifiers belong to operational telemetry/SQLite correlation, never Replay Capsules. Collector failure must not block capture, sealing, validation, or replay.
 
@@ -68,4 +69,5 @@ Telemetry must not contain capture payloads, dependency responses, credentials, 
 - Safe fixture review criteria are not detailed yet.
 - No production threat model exists yet.
 - The local dashboard and OTLP endpoint have no authentication, and transport is not a production security design.
+- kind container controls reduce privileges for this local gate but do not constitute a Kubernetes threat model, image-signing system, network policy, admission policy, or security certification.
 - No claim is made that all possible sensitive values can be detected automatically.

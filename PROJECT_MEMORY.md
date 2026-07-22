@@ -15,12 +15,13 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
 - Local FastAPI dashboard with allow-listed runners and SQLite replay history.
 - Optional local distributed ingestion: Go HTTP gateway, bounded asynchronous Kafka publishing, at-least-once Python consumption, SQLite ordering/idempotency, DLQ handling, capsule assembly, and sealing.
 - Optional local Prometheus metrics and OpenTelemetry capture traces with later linked replay traces.
+- Native Kustomize manifests and repeatable automation for the existing distributed stack on one verified local ARM64 kind cluster, including bounded pod-recovery and PVC-persistence checks.
 
 Only the executed evidence in [docs/verification-ledger.md](docs/verification-ledger.md) may be cited as verification.
 
 ## Explicit Non-Capabilities
 
-TraceForge does not currently provide fork replay, live replay, production capture integration, broad framework support, hosted storage, authentication, multi-tenancy, production operations, automatic repair, Kubernetes, Terraform, ClickHouse, SaaS billing, or a production security guarantee. It makes no adoption, scale, benchmark, reliability, or hallucination-elimination claim.
+TraceForge does not currently provide fork replay, live replay, production capture integration, broad framework support, hosted storage, authentication, multi-tenancy, production operations, automatic repair, cloud/production Kubernetes, Terraform, ClickHouse, SaaS billing, or a production security guarantee. The local kind gate is not evidence of high availability, scale, cloud compatibility, or security. It makes no adoption, benchmark, reliability, or hallucination-elimination claim.
 
 ## Architectural Invariants
 
@@ -86,20 +87,21 @@ The canonical security model is [docs/security.md](docs/security.md); vulnerabil
 - [ADR-0002](docs/decisions/ADR-0002-replay-capsule-v0-format.md): Replay Capsule v0 format, canonicalization, integrity, and fail-closed replay.
 - [ADR-0003](docs/decisions/ADR-0003-capture-event-transport.md): versioned capture-event transport, ordering, idempotency, and evidence boundary.
 - [ADR-0004](docs/decisions/ADR-0004-repository-memory-and-navigation.md): mandatory repository memory, authority routing, evidence ledger, and contributor update contract.
+- [ADR-0005](docs/decisions/ADR-0005-local-kubernetes-kind-deployment.md): native-Kustomize local kind topology, container security, PVC persistence, automation, and claim boundaries.
 
 ADRs are historical records. Supersede them with a new ADR; do not silently rewrite accepted decisions.
 
 ## Current Branch, Milestone, and Limitations
 
-- Documented branch: `feat/distributed-ingestion-v0.2`.
-- Current milestone: repository memory and contributor navigation, completed on 2026-07-21 after the local distributed-ingestion and cross-service observability milestones.
-- Known limitations: no fork/live replay; no production client integration; redaction is best effort; the replay network guard is process-wide; transport is at least once; local SQLite is not a distributed store; concurrent host inspection of the worker's Docker Desktop bind-mounted WAL is unsupported; the Collector topology is local development only.
+- Documented branch: `feat/kubernetes-local-v0.3`.
+- Current milestone: local Kubernetes v0.3, completed on 2026-07-22 after the existing five-workload stack passed the dedicated ARM64 kind gate.
+- Known limitations: no fork/live replay; no production client integration; redaction is best effort; the replay network guard is process-wide; transport is at least once; local SQLite is single writer and not a distributed store; Kafka is ephemeral in kind; the RWO PVC is deleted with the cluster; concurrent host inspection of a live worker WAL is unsupported; kind and the Collector topology are local development only.
 
 Live branch, milestone, blockers, and assumptions belong in [docs/project-state.md](docs/project-state.md), not in this summary.
 
 ## Exact Next Approved Milestone
 
-Review the verified local distributed-ingestion and observability milestone before approving Kubernetes, Terraform, or another expansion. No infrastructure expansion is approved by this memory/navigation milestone.
+Review the verified local kind deployment gate before approving Terraform, cloud Kubernetes, production storage, or another infrastructure expansion. No further infrastructure expansion is approved by the v0.3 milestone.
 
 ## Required Reading Order
 

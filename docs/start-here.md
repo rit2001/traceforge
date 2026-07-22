@@ -14,7 +14,7 @@ TraceForge is an experimental local developer tool for capturing a failed Python
 - Three controlled cases: weather grounding, RAG citation grounding, and tool-argument safety.
 - An optional local distributed path through a Go HTTP gateway, Kafka, a Python assembly worker, sealed capsule storage, Prometheus metrics, and optional OpenTelemetry collection.
 
-Fork replay, live replay, production capture integration, hosted operation, authentication, Kubernetes, and Terraform do not exist. Check the exact evidence and limitations in [verification-ledger.md](verification-ledger.md).
+Fork replay, live replay, production capture integration, hosted operation, authentication, cloud Kubernetes, and Terraform do not exist. A native-Kustomize local kind deployment exists as a development gate only; check its exact evidence and limitations in [verification-ledger.md](verification-ledger.md).
 
 ## Run the Smallest Example
 
@@ -51,6 +51,8 @@ docker compose -f compose.kafka.yml down
 
 For the Collector and cross-language trace verifier, use the exact commands in [operations/observability.md](operations/observability.md). For startup, shutdown, and failure triage, use [operations/README.md](operations/README.md).
 
+For the local Kubernetes gate, use [operations/kubernetes.md](operations/kubernetes.md). Access remains through `kubectl port-forward`; there is no public LoadBalancer.
+
 ## Where Is Each Subsystem?
 
 | Subsystem | Location |
@@ -63,6 +65,7 @@ For the Collector and cross-language trace verifier, use the exact commands in [
 | Go gateway | [services/ingest-gateway/](../services/ingest-gateway/) |
 | OpenTelemetry Collector | [services/otel-collector.yaml](../services/otel-collector.yaml) |
 | Docker/Compose | [Dockerfile](../Dockerfile), [Dockerfile.kafka](../Dockerfile.kafka), and [compose.kafka.yml](../compose.kafka.yml) |
+| Kubernetes/kind | [deploy/kubernetes/](../deploy/kubernetes/), [scripts/kubernetes/](../scripts/kubernetes/), and [operations/kubernetes.md](operations/kubernetes.md) |
 | Tests | [tests/](../tests/) and Go `_test.go` files under the gateway |
 | Documentation and ADRs | [docs/](.) |
 
@@ -84,4 +87,4 @@ See [codebase-map.md](codebase-map.md) for inputs, outputs, invariants, extensio
 - Capture-event ordering, `capture_id` keying, `event_id` idempotency, or at-least-once semantics.
 - Local/offline defaults, trust boundaries, secret rules, or developer approval for generated assertions.
 - Service ownership or an accepted ADR without a superseding ADR.
-- The postponed status of Kubernetes, Terraform, hosted services, authentication, and production claims without explicit approval and measured evidence.
+- The local-only claim boundary for kind and the postponed status of Terraform, cloud/production Kubernetes, hosted services, authentication, and production claims without explicit approval and measured evidence.

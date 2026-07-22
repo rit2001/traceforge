@@ -28,6 +28,8 @@ curl http://127.0.0.1:19464/metrics
 docker compose --profile observability -f compose.kafka.yml down
 ```
 
+For the local kind topology, use the bounded verifier and Collector access described in the [Kubernetes runbook](operations/kubernetes.md). It preserves the same span, metric, and evidence-separation rules.
+
 The smoke command prints distinct capture and replay trace IDs, verifies the replay link, checks required span names and service names, and writes a sanitized summary to the ignored `.traceforge-data/otel/verification-summary.json`. Raw local Collector output is also ignored under `.traceforge-data/otel/`.
 
 If spans are initially absent, allow for the SDK and Collector batch processors. Check the Collector health endpoint and logs, confirm the observability profile is active, and verify that OTLP receivers are reachable on ports 4317 or 4318.
