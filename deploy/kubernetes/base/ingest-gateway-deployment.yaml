@@ -16,6 +16,8 @@ spec:
         app.kubernetes.io/name: ingest-gateway
         app.kubernetes.io/component: ingestion
     spec:
+      serviceAccountName: ingest-gateway
+      automountServiceAccountToken: false
       terminationGracePeriodSeconds: 15
       securityContext:
         runAsNonRoot: true

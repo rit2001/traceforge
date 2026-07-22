@@ -16,12 +16,13 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
 - Optional local distributed ingestion: Go HTTP gateway, bounded asynchronous Kafka publishing, at-least-once Python consumption, SQLite ordering/idempotency, DLQ handling, capsule assembly, and sealing.
 - Optional local Prometheus metrics and OpenTelemetry capture traces with later linked replay traces.
 - Native Kustomize manifests and repeatable automation for the existing distributed stack on one verified local ARM64 kind cluster, including bounded pod-recovery and PVC-persistence checks.
+- A pinned-provider local Terraform foundation for that kind deployment, with native mock tests and a verified plan/apply/state/zero-drift/controlled-drift/reconciliation/destroy lifecycle.
 
 Only the executed evidence in [docs/verification-ledger.md](docs/verification-ledger.md) may be cited as verification.
 
 ## Explicit Non-Capabilities
 
-TraceForge does not currently provide fork replay, live replay, production capture integration, broad framework support, hosted storage, authentication, multi-tenancy, production operations, automatic repair, cloud/production Kubernetes, Terraform, ClickHouse, SaaS billing, or a production security guarantee. The local kind gate is not evidence of high availability, scale, cloud compatibility, or security. It makes no adoption, benchmark, reliability, or hallucination-elimination claim.
+TraceForge does not currently provide fork replay, live replay, production capture integration, broad framework support, hosted storage, authentication, multi-tenancy, production operations, automatic repair, cloud/production Kubernetes or Terraform, ClickHouse, SaaS billing, or a production security guarantee. The local kind/Terraform gates are not evidence of high availability, scale, cloud compatibility, or security. They make no adoption, benchmark, reliability, or hallucination-elimination claim.
 
 ## Architectural Invariants
 
@@ -88,20 +89,21 @@ The canonical security model is [docs/security.md](docs/security.md); vulnerabil
 - [ADR-0003](docs/decisions/ADR-0003-capture-event-transport.md): versioned capture-event transport, ordering, idempotency, and evidence boundary.
 - [ADR-0004](docs/decisions/ADR-0004-repository-memory-and-navigation.md): mandatory repository memory, authority routing, evidence ledger, and contributor update contract.
 - [ADR-0005](docs/decisions/ADR-0005-local-kubernetes-kind-deployment.md): native-Kustomize local kind topology, container security, PVC persistence, automation, and claim boundaries.
+- [ADR-0006](docs/decisions/ADR-0006-terraform-kustomize-ownership.md): local Terraform foundation, state boundary, and disjoint Terraform/Kustomize ownership.
 
 ADRs are historical records. Supersede them with a new ADR; do not silently rewrite accepted decisions.
 
 ## Current Branch, Milestone, and Limitations
 
-- Documented branch: `feat/kubernetes-local-v0.3`.
-- Current milestone: local Kubernetes v0.3, completed on 2026-07-22 after the existing five-workload stack passed the dedicated ARM64 kind gate.
-- Known limitations: no fork/live replay; no production client integration; redaction is best effort; the replay network guard is process-wide; transport is at least once; local SQLite is single writer and not a distributed store; Kafka is ephemeral in kind; the RWO PVC is deleted with the cluster; concurrent host inspection of a live worker WAL is unsupported; kind and the Collector topology are local development only.
+- Documented branch: `feat/terraform-foundation-v0.4`.
+- Current milestone: local Terraform foundation v0.4, completed on 2026-07-22 after its eight resources and the unchanged five-workload stack passed the dedicated ARM64 kind lifecycle.
+- Known limitations: no fork/live replay; no production client integration; redaction is best effort; the replay network guard is process-wide; transport is at least once; local SQLite is single writer and not a distributed store; Kafka is ephemeral in kind; the RWO PVC is deleted with the cluster; local Terraform state is ignored and has no remote encryption/locking/backup; concurrent host inspection of a live worker WAL is unsupported; kind, Terraform, and the Collector topology are local development only.
 
 Live branch, milestone, blockers, and assumptions belong in [docs/project-state.md](docs/project-state.md), not in this summary.
 
 ## Exact Next Approved Milestone
 
-Review the verified local kind deployment gate before approving Terraform, cloud Kubernetes, production storage, or another infrastructure expansion. No further infrastructure expansion is approved by the v0.3 milestone.
+Review the verified local Terraform/Kustomize ownership gate before approving a cloud environment, remote backend, production Kubernetes, production storage, or another infrastructure expansion. No further infrastructure expansion is approved by the v0.4 milestone.
 
 ## Required Reading Order
 

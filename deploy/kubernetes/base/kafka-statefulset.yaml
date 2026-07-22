@@ -19,6 +19,8 @@ spec:
         app.kubernetes.io/component: local-development-infrastructure
         traceforge.dev/infrastructure: local-development
     spec:
+      serviceAccountName: kafka
+      automountServiceAccountToken: false
       terminationGracePeriodSeconds: 60
       securityContext:
         runAsNonRoot: true

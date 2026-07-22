@@ -2,7 +2,7 @@
 
 ## Feasibility-Spike Architecture
 
-The original spike architecture was local, narrow, and file-based. The v0.2 work preserves that replay core while adding an optional local asynchronous ingestion path. The v0.3 deployment gate schedules the same path on a local kind Kubernetes cluster without changing replay semantics.
+The original spike architecture was local, narrow, and file-based. The v0.2 work preserves that replay core while adding an optional local asynchronous ingestion path. The v0.3 deployment gate schedules the same path on a local kind Kubernetes cluster without changing replay semantics. Terraform v0.4 adds local state and lifecycle management for a deliberately small Kubernetes foundation around that unchanged workload topology.
 
 Core components:
 
@@ -178,12 +178,18 @@ The single kind `ReadWriteOnce` claim holds worker assembly SQLite, sealed capsu
 
 ClickHouse is postponed because the product is not yet a large-scale observability database. Local Replay Capsules and offline tests should prove value before analytical storage is considered.
 
-Terraform, cloud Kubernetes, SaaS authentication, and payments remain postponed. The local kind gate does not support production deployment, scale, high-availability, durability, or security claims.
+### Terraform/Kustomize Ownership
+
+The v0.4 Terraform module owns the `traceforge` Namespace, its ResourceQuota and LimitRange, five dedicated ServiceAccounts, and foundation labels. Each ServiceAccount disables token automount because no workload calls the Kubernetes API. Kustomize continues to own Deployments, the Kafka StatefulSet, Services, ConfigMaps, the application PVC, and all Pod configuration. The ordinary `kind` overlay supplies an equivalent Kustomize foundation; the `terraform-kind` overlay omits it. Both overlays consume the same base and local component, so workload definitions are not duplicated and no live object is jointly managed.
+
+The kind environment uses explicit kubeconfig path and context inputs, a pinned official Kubernetes provider, a committed dependency lock, and ignored local state. Production state would require a protected remote backend with encryption, locking, access control, backup, and tested recovery. Terraform does not create kind, images, cloud resources, secrets, or application data. See [ADR-0006](decisions/ADR-0006-terraform-kustomize-ownership.md) and the [Terraform runbook](operations/terraform.md).
+
+Cloud Kubernetes, SaaS authentication, and payments remain postponed. The local kind and Terraform gates do not support production deployment, scale, high-availability, durability, cloud, or security claims.
 
 ## Layering and Future Placement
 
 Immutable captured evidence belongs to the capsule/domain layer. Validation, sealing, replay, comparison, and regression evaluation may read it but must never repair or rewrite it. Future repair strategies may produce proposals or new derived artifacts only.
 
-The CLI and FastAPI dashboard are application interfaces over the same domain functions. Authentication belongs in API middleware. SQLite implements replay-history summaries plus local Kafka idempotency, assembly, and trace-correlation state without storing telemetry in or modifying capsule evidence; future databases belong behind storage interfaces. Kafka implements the optional `EventPublisher` transport boundary. Framework support belongs in optional adapters/plugins. Kubernetes remains a deployment concern and cannot change replay semantics; Terraform remains postponed.
+The CLI and FastAPI dashboard are application interfaces over the same domain functions. Authentication belongs in API middleware. SQLite implements replay-history summaries plus local Kafka idempotency, assembly, and trace-correlation state without storing telemetry in or modifying capsule evidence; future databases belong behind storage interfaces. Kafka implements the optional `EventPublisher` transport boundary. Framework support belongs in optional adapters/plugins. Kubernetes and the bounded Terraform foundation remain deployment concerns and cannot change replay semantics.
 
 See the responsibility-level [codebase map](codebase-map.md), operational [Kafka runbook](operations/kafka.md), and [observability runbook](operations/observability.md).

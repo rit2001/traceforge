@@ -18,6 +18,8 @@ spec:
         app.kubernetes.io/name: traceforge-worker
         app.kubernetes.io/component: capsule-assembly
     spec:
+      serviceAccountName: traceforge-worker
+      automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
       securityContext:
         runAsNonRoot: true

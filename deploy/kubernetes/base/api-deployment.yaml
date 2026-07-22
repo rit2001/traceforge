@@ -16,6 +16,8 @@ spec:
         app.kubernetes.io/name: traceforge-api
         app.kubernetes.io/component: dashboard
     spec:
+      serviceAccountName: traceforge-api
+      automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
       securityContext:
         runAsNonRoot: true

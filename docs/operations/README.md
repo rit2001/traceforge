@@ -2,7 +2,7 @@
 
 These are concise troubleshooting notes for the optional local Compose and kind topologies. They are development runbooks, not production procedures, SLOs, or evidence of operational readiness.
 
-For the native-Kustomize local Kubernetes deployment, use the dedicated [kind runbook](kubernetes.md). The Compose commands below remain valid for the original single-host topology.
+For the native-Kustomize local Kubernetes deployment, use the dedicated [kind runbook](kubernetes.md). For the Terraform-backed foundation and ordered ownership lifecycle, use the [Terraform runbook](terraform.md). The Compose commands below remain valid for the original single-host topology.
 
 ## Clean Startup
 
@@ -33,6 +33,7 @@ Ordinary `down` preserves the Kafka named volume and host-visible data directory
 | Kafka unavailable, gateway unready, queue full, worker stalled, DLQ growth, capsule absent | [Kafka and ingestion](kafka.md) |
 | Collector unavailable, spans missing, trace link missing, metrics questions | [Observability](observability.md) |
 | kind cluster, Kustomize, image loading, pod recovery, or PVC persistence | [Local Kubernetes](kubernetes.md) |
+| Terraform plan/state/drift/destroy or foundation ownership | [Local Terraform](terraform.md) |
 | SQLite bind-mount warning | [SQLite bind-mount warning](#sqlite-bind-mount-warning) |
 
 ## SQLite Bind-Mount Warning

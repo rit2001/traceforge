@@ -136,3 +136,11 @@ Does not prove:
 - That a worker metrics probe detects stalled Kafka consumption; the end-to-end smoke supplies the bounded consumption evidence.
 
 The gate is opt-in, requires Docker and kind, uses no paid or external application API, and must delete the dedicated cluster after evidence is collected.
+
+## Local Terraform Gate
+
+Fast native tests under `infra/terraform/environments/kind/tests/*.tftest.hcl` use a mock Kubernetes provider. They check default names/labels, the exact ServiceAccount set, disabled token automount, quota and LimitRange values, outputs, and rejection of invalid namespace, context, quota, and LimitRange inputs. CI runs format, backend-free initialization, validation, and mock tests without Docker, kind, cloud credentials, or infrastructure creation.
+
+The opt-in real gate initializes the pinned provider, plans and applies eight foundation resources to the dedicated kind context, inspects state, applies the Terraform-backed Kustomize overlay, and runs the existing application smoke once. `plan -detailed-exitcode` must return 0 after apply, 2 after a controlled disposable namespace-label change, and 0 after reconciliation. Cleanup removes Kustomize objects first, destroys Terraform resources, verifies empty state/absent namespace, and destroys the dedicated cluster.
+
+This proves the tested local provider/state lifecycle and ownership boundary for one kind cluster. It does not prove remote-state operation, cloud compatibility, AWS/EKS, concurrent operators, production recovery, availability, scale, or security. Mock-provider tests do not prove API-server behaviour; the real gate supplies that bounded evidence.

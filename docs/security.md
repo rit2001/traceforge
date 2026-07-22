@@ -14,6 +14,7 @@ This is an initial security model for the local feasibility spike. It is not a p
 - FastAPI dashboard: unauthenticated local interface with allow-listed runners and size-bounded uploads.
 - OpenTelemetry Collector: optional unencrypted/unauthenticated local diagnostic endpoint; it is not an evidence store or approved external export path.
 - Local kind cluster: schedules the existing containers with non-root identities, dropped capabilities, RuntimeDefault seccomp, resource bounds, and local PVC storage; it is not a production security boundary or multi-tenant environment.
+- Local Terraform environment: reads an explicit kubeconfig path/context and stores non-secret foundation metadata in ignored local state; state is sensitive operational material even when the current resources contain no intended secrets.
 
 ## Capsule Data Risks
 
@@ -62,6 +63,8 @@ The implementation assumes local execution, local files, offline default tests, 
 
 Telemetry must not contain capture payloads, dependency responses, credentials, authorization material, raw user messages, or high-cardinality identifiers in metric labels. Trace and span identifiers belong to operational telemetry/SQLite correlation, never Replay Capsules. Collector failure must not block capture, sealing, validation, or replay.
 
+No secret value belongs in Terraform variables, plans, state, logs, outputs, or examples. The committed provider lock file contains provider selections and checksums, not credentials; `.terraform/`, plans, and state are ignored. The five workload ServiceAccounts and Pod specs disable token automount because the services do not require Kubernetes API access. A production design would need a protected remote backend with encryption, locking, access control, backup, recovery testing, and audit procedures; the local backend supplies none of those controls.
+
 ## Known Limitations
 
 - A versioned best-effort redaction scanner is implemented, but it cannot detect every sensitive value or prove secret absence.
@@ -70,4 +73,5 @@ Telemetry must not contain capture payloads, dependency responses, credentials, 
 - No production threat model exists yet.
 - The local dashboard and OTLP endpoint have no authentication, and transport is not a production security design.
 - kind container controls reduce privileges for this local gate but do not constitute a Kubernetes threat model, image-signing system, network policy, admission policy, or security certification.
+- Local ignored Terraform state is neither encrypted nor remotely locked or backed up; it must not be reused as a production backend design.
 - No claim is made that all possible sensitive values can be detected automatically.
