@@ -25,3 +25,15 @@ jobs:
           /tmp/traceforge-smoke/bin/traceforge --help
           /tmp/traceforge-smoke/bin/traceforge validate "$GITHUB_WORKSPACE/examples/weather/replay-capsule.json"
           /tmp/traceforge-smoke/bin/traceforge replay "$GITHUB_WORKSPACE/examples/weather/replay-capsule.json" --runner traceforge.examples.weather_agent:run --spec "$GITHUB_WORKSPACE/examples/weather/regression-spec.json"
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+      - run: terraform fmt -check -recursive infra/terraform
+      - run: terraform -chdir=infra/terraform/environments/kind init -backend=false
+      - run: terraform -chdir=infra/terraform/environments/kind validate
+      - run: terraform -chdir=infra/terraform/environments/kind test

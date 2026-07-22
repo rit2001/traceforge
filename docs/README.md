@@ -20,12 +20,14 @@ Read [PROJECT_MEMORY.md](../PROJECT_MEMORY.md) first. This directory is the auth
 - [ADR-0003](decisions/ADR-0003-capture-event-transport.md): accepted asynchronous capture-event envelope, ordering, idempotency, and evidence boundary.
 - [ADR-0004](decisions/ADR-0004-repository-memory-and-navigation.md): accepted repository-memory authority, contributor reading order, and update contract.
 - [ADR-0005](decisions/ADR-0005-local-kubernetes-kind-deployment.md): accepted native-Kustomize local kind deployment, security, persistence, and claim boundaries.
+- [ADR-0006](decisions/ADR-0006-terraform-kustomize-ownership.md): accepted local Terraform foundation and disjoint Terraform/Kustomize object ownership.
 - [Go ingestion gateway](services/go-ingestion-gateway.md): local HTTP ingestion, validation, backpressure, and Kafka publishing semantics.
 - [Observability](observability.md): optional local cross-service traces, replay links, metrics, verification commands, and security limitations.
 - [Verification ledger](verification-ledger.md): commands and methods actually executed, results, environments, revisions, and limitations.
 - [Git workflow](git-workflow.md): branch, commit, pull-request, release, rollback, artifact, and secret rules.
 - [Local operations](operations/): development-only Kafka, gateway, worker, capsule, Collector, metrics, and SQLite runbooks.
 - [Local Kubernetes operations](operations/kubernetes.md): dedicated kind lifecycle, port-forward access, verification, persistence, and failure triage.
+- [Local Terraform operations](operations/terraform.md): guarded foundation plan/apply/state/drift/destroy lifecycle and ownership order.
 
 ## Documentation Ownership and Update Table
 
@@ -49,6 +51,7 @@ Read [PROJECT_MEMORY.md](../PROJECT_MEMORY.md) first. This directory is the auth
 | [Replay Capsule contract](contracts/replay-capsule-v0.md) | Normative capsule semantics | Format contract for `0.1.0` | Compatible clarification only; incompatible changes require a new version and ADR | Contract owner/maintainer |
 | [ADRs](decisions/) | Historical architectural decisions | Decision rationale and status | New decision or explicit supersession; accepted history is not silently rewritten | Decision owner/reviewers |
 | [Local Kubernetes operations](operations/kubernetes.md) | kind deployment and recovery procedure | Dedicated cluster lifecycle, access, persistence, and bounded verification | Manifest, lifecycle command, local failure mode, or recovery path changes | Kubernetes milestone implementer/operator |
+| [Local Terraform operations](operations/terraform.md) | local foundation lifecycle | Provider/state design, plan/apply/drift/destroy, and Terraform/Kustomize ownership order | Module, environment, state, provider, ownership, guard, or recovery path changes | Terraform milestone implementer/operator |
 | [Go gateway](services/go-ingestion-gateway.md) | Gateway behaviour | Component detail | HTTP, validation, readiness, queueing, Kafka, or shutdown behaviour changes | Gateway implementer |
 | [LangGraph migration](integrations/langgraph-migration.md) | Optional integration seam | Integration guidance | Adapter/package boundary or supported migration workflow changes | Framework integration implementer |
 | [Observability](observability.md) | Trace, link, metric, and telemetry security model | Observability detail | Span/metric model, configuration, verifier, or limitation changes | Observability implementer |

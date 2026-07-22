@@ -14,7 +14,7 @@ TraceForge is an experimental local developer tool for capturing a failed Python
 - Three controlled cases: weather grounding, RAG citation grounding, and tool-argument safety.
 - An optional local distributed path through a Go HTTP gateway, Kafka, a Python assembly worker, sealed capsule storage, Prometheus metrics, and optional OpenTelemetry collection.
 
-Fork replay, live replay, production capture integration, hosted operation, authentication, cloud Kubernetes, and Terraform do not exist. A native-Kustomize local kind deployment exists as a development gate only; check its exact evidence and limitations in [verification-ledger.md](verification-ledger.md).
+Fork replay, live replay, production capture integration, hosted operation, authentication, and cloud Kubernetes do not exist. A native-Kustomize local kind deployment and a bounded local Terraform foundation exist as development gates only; check their exact evidence and limitations in [verification-ledger.md](verification-ledger.md).
 
 ## Run the Smallest Example
 
@@ -53,6 +53,8 @@ For the Collector and cross-language trace verifier, use the exact commands in [
 
 For the local Kubernetes gate, use [operations/kubernetes.md](operations/kubernetes.md). Access remains through `kubectl port-forward`; there is no public LoadBalancer.
 
+For the Terraform-backed foundation lifecycle and required ownership order, use [operations/terraform.md](operations/terraform.md). Terraform does not create the kind cluster or deliver application workloads.
+
 ## Where Is Each Subsystem?
 
 | Subsystem | Location |
@@ -66,6 +68,7 @@ For the local Kubernetes gate, use [operations/kubernetes.md](operations/kuberne
 | OpenTelemetry Collector | [services/otel-collector.yaml](../services/otel-collector.yaml) |
 | Docker/Compose | [Dockerfile](../Dockerfile), [Dockerfile.kafka](../Dockerfile.kafka), and [compose.kafka.yml](../compose.kafka.yml) |
 | Kubernetes/kind | [deploy/kubernetes/](../deploy/kubernetes/), [scripts/kubernetes/](../scripts/kubernetes/), and [operations/kubernetes.md](operations/kubernetes.md) |
+| Terraform foundation | [infra/terraform/](../infra/terraform/), [scripts/terraform/](../scripts/terraform/), and [operations/terraform.md](operations/terraform.md) |
 | Tests | [tests/](../tests/) and Go `_test.go` files under the gateway |
 | Documentation and ADRs | [docs/](.) |
 
@@ -87,4 +90,4 @@ See [codebase-map.md](codebase-map.md) for inputs, outputs, invariants, extensio
 - Capture-event ordering, `capture_id` keying, `event_id` idempotency, or at-least-once semantics.
 - Local/offline defaults, trust boundaries, secret rules, or developer approval for generated assertions.
 - Service ownership or an accepted ADR without a superseding ADR.
-- The local-only claim boundary for kind and the postponed status of Terraform, cloud/production Kubernetes, hosted services, authentication, and production claims without explicit approval and measured evidence.
+- The local-only claim boundary for kind/Terraform and the postponed status of cloud/production Kubernetes, hosted services, authentication, and production claims without explicit approval and measured evidence.

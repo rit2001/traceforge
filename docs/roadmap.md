@@ -2,13 +2,13 @@
 
 TraceForge uses evidence-based stage gates. Stages advance only when the exit criteria are met, not because a deadline elapsed.
 
-The replay feasibility loop passed, an optional local Go/Kafka/Collector v0.2 path was implemented, and the separately approved v0.3 gate ran that same stack on local kind with native Kustomize. Terraform, cloud Kubernetes, distributed storage, and additional microservices remain postponed until measured needs and another separately approved milestone require them.
+The replay feasibility loop passed, an optional local Go/Kafka/Collector v0.2 path was implemented, the v0.3 gate ran that same stack on local kind with native Kustomize, and v0.4 added a bounded Terraform-managed Kubernetes foundation. Cloud Terraform, cloud Kubernetes, distributed storage, and additional microservices remain postponed until measured needs and another separately approved milestone require them.
 
 ## Current Implementation Evidence
 
 As of 2026-07-22, documentation and Replay Capsule v0, validation/sealing, exact offline replay, separate regression evaluation, pytest export, best-effort capture/redaction, one optional LangGraph integration, a local FastAPI/SQLite dashboard, the optional distributed path, and its local kind deployment gate are implemented and tested with controlled local data. Fork replay, real Agentic-chatbot integration, measured live experiments, hosted services, and production hardening are not complete.
 
-The local dashboard is an MVP inspection surface, not evidence that production service-infrastructure criteria are met. Docker and CI package the local product; the optional single-node Kafka/Go/Collector Compose and kind topologies are development evidence only. Terraform, cloud/production Kubernetes, distributed storage, SaaS authentication, and payments remain postponed.
+The local dashboard is an MVP inspection surface, not evidence that production service-infrastructure criteria are met. Docker and CI package the local product; the optional single-node Kafka/Go/Collector Compose, kind, and Terraform topologies are development evidence only. Cloud Terraform, cloud/production Kubernetes, distributed storage, SaaS authentication, and payments remain postponed.
 
 ## Stage 0: Documentation and Feasibility Definition
 
