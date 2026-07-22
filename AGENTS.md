@@ -1,11 +1,13 @@
 # Repository Rules for Codex
 
-TraceForge is in a replay-feasibility phase. Codex must keep changes small, explicit, and tied to the approved milestone.
+TraceForge is an experimental replay-first project with an optional local distributed-ingestion path. Codex must keep changes small, explicit, and tied to one approved milestone.
 
 ## Operating Rules
 
 - Work on one approved milestone only.
-- Before implementation, read `docs/README.md` and `docs/project-state.md`.
+- Before architectural or implementation work, read `PROJECT_MEMORY.md` first.
+- Read `docs/project-state.md`, relevant accepted ADRs, and the component documents linked from `docs/README.md`.
+- Inspect `git status` and the current branch before editing.
 - Explain the implementation plan and acceptance criteria before making application-code changes.
 - Never inspect, print, copy, transform, or expose secrets.
 - Never access, create, edit, rename, or infer contents from `.env` files.
@@ -19,8 +21,13 @@ TraceForge is in a replay-feasibility phase. Codex must keep changes small, expl
 - Run relevant tests before finishing when tests exist and can run offline.
 - Report unresolved risks, skipped tests, and assumptions.
 - Prefer small, reviewable diffs.
-- Update `docs/project-state.md` when a milestone is completed or the approved next task changes.
-- Add an ADR for significant cross-cutting or hard-to-reverse decisions.
+- After material work, update `docs/project-state.md` when a milestone is completed, a blocker/assumption changes, or the approved next task changes.
+- Update `docs/codebase-map.md` whenever responsibilities, important inputs/outputs, invariants, or extension seams move.
+- Update `docs/verification-ledger.md` only with evidence actually executed; include the command or method, result, environment, date, revision, and limitations.
+- Add or supersede an ADR for significant cross-cutting or hard-to-reverse decisions. Never silently rewrite an accepted ADR's history.
+- Update the relevant runbook under `docs/operations/` when material work introduces or verifies a new failure mode or recovery path.
+- Never silently rewrite historical evidence. Retain older evidence and record a clearly dated superseding entry.
+- Keep `PROJECT_MEMORY.md` synchronized when a durable boundary, invariant, accepted decision set, milestone, next approved milestone, or reading contract changes.
 - Keep documentation and code consistent.
 - Report detected documentation drift.
 
@@ -31,6 +38,7 @@ TraceForge is in a replay-feasibility phase. Codex must keep changes small, expl
 - Exact replay freezes model and tool outputs.
 - Fork replay freezes tool outputs but runs the model or prompt again.
 - AI-generated assertions always require developer approval before becoming regression tests.
-- Do not add Go, Kafka, Terraform, Kubernetes, ClickHouse, SaaS authentication, or payment systems before the replay feasibility spike passes.
+- The approved local Go/Kafka/Collector path is optional development infrastructure and must not change replay semantics.
+- Do not add Terraform, Kubernetes, ClickHouse, SaaS authentication, payment systems, or production infrastructure without a separately approved evidence-based milestone and ADR where required.
 
-For detailed product, architecture, roadmap, testing, security, and terminology ownership, use `docs/README.md` as the documentation index instead of duplicating long-form content here.
+For durable repository memory start with `PROJECT_MEMORY.md`. For detailed product, architecture, roadmap, testing, security, operations, and terminology ownership, use `docs/README.md` instead of duplicating long-form content here.

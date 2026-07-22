@@ -1,16 +1,16 @@
 # Project State
 
-Last verified date: 2026-07-19.
+Last verified date: 2026-07-21.
 
 ## Current Phase
 
-The replay feasibility implementation is complete. TraceForge is in the optional distributed-ingestion v0.2 implementation phase.
+The replay feasibility implementation is complete. The optional local distributed-ingestion and observability v0.2 implementation is complete. TraceForge is in the repository-memory and contributor-navigation documentation milestone.
 
 ## Current Milestone
 
-Cross-service OpenTelemetry for the Go gateway, Kafka transport, Python worker, assembly, sealing, and later linked replay.
+Repository memory, contributor navigation, code ownership, executed-evidence ledger, Git workflow, and local operations runbooks.
 
-This milestone was completed on 2026-07-19.
+This documentation/governance milestone was completed on 2026-07-21. It adds no application or deployment infrastructure.
 
 ## Completed Milestones
 
@@ -21,10 +21,13 @@ This milestone was completed on 2026-07-19.
 - Product-completion implementation: pytest export, capture/redaction SDK, optional LangGraph integration, local FastAPI/SQLite dashboard, Docker packaging, CI, and public documentation completed on 2026-07-19 with 43 tests passing. Ruff, compile, JSON, wheel, clean-install, installed CLI, generated-test, and dashboard-health checks passed; Docker build verification was skipped because the local daemon was unavailable.
 - Optional Kafka ingestion: the Go gateway, at-least-once Kafka worker, idempotent SQLite assembly, DLQ boundary, host-visible local storage, and real HTTP-to-sealed-capsule replay smoke passed on 2026-07-19.
 - Cross-service observability: W3C context propagation through Go, Kafka headers, and Python plus a separate linked replay trace passed on 2026-07-19. The verified run used capture trace `79cedf78786ca8f00ac6703927002fc6` and replay trace `58340b38ce71e300e33f3f2de967c277`; required spans, the Kafka parent relationship, and the replay link to SQLite correlation span `d5b190791001b831` were present, and the bounded attribute scan passed.
+- Repository memory and contributor navigation: root memory, five-minute start page, component map, verification ledger, Git policy, documentation ownership, and local runbooks completed on 2026-07-21. See the verification ledger for checks executed during completion.
 
 ## Repository Status
 
 Documentation, both structural schemas, the `traceforge-replay` distribution, controlled local replay artifacts, focused tests, an optional Kafka worker, and a Go ingestion gateway exist.
+
+The documented working branch for the completed v0.2 and documentation milestones is `feat/distributed-ingestion-v0.2`.
 
 The package provides capture with best-effort redaction, sealing, validation, exact replay, deterministic comparison, regression evaluation/export, one optional LangGraph adapter, Kafka assembly commands, and a local dashboard. The optional local distributed path provides HTTP ingestion, Kafka transport, SQLite idempotency/assembly, Prometheus metrics, and disabled-by-default OTLP tracing. No fork replay, live replay, production capture integration, hosted service, authentication, Kubernetes, or Terraform exists.
 
@@ -40,6 +43,7 @@ The package provides capture with best-effort redaction, sealing, validation, ex
 - TraceForge and Agentic-chatbot remain separate repositories.
 - Agentic-chatbot integration eventually happens by installing a local TraceForge Python package/API on a dedicated integration branch.
 - Sanitized capsule fixtures may be stored in TraceForge only after review.
+- `PROJECT_MEMORY.md` is the mandatory long-term entry point; detailed status, decisions, evidence, ownership, and runbooks retain separate canonical owners under ADR-0004.
 
 ## Current Assumptions
 

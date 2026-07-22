@@ -152,6 +152,20 @@ W3C Trace Context is propagated from HTTP into Kafka headers and extracted for o
 
 The default core installation and ordinary dashboard image do not require Kafka or OpenTelemetry. The Compose broker/controller combination and local Collector are development-only topologies.
 
+The implemented local flow is:
+
+```text
+Python capture SDK/client
+  -> Go ingestion gateway
+  -> Kafka capture-event topic
+  -> Python assembly worker
+  -> SQLite ordering/idempotency and correlation state
+  -> sealed JSON Replay Capsule
+  -> exact replay, comparison, regression evaluation, dashboard, or pytest export
+```
+
+The boundaries are intentionally asymmetric. Go owns bounded HTTP validation, readiness, backpressure, and asynchronous publishing; it does not assemble evidence or replay agents. Kafka owns retryable at-least-once transport, not evidence. Python owns event semantics, assembly, sealing, replay, and regression. SQLite owns local operational state but never becomes part of capsule integrity. The Collector observes local execution and may fail independently without invalidating capsules or replay.
+
 ## Postponed Infrastructure
 
 ClickHouse is postponed because the product is not yet a large-scale observability database. Local Replay Capsules and offline tests should prove value before analytical storage is considered.
@@ -163,3 +177,5 @@ Terraform, Kubernetes, SaaS authentication, and payments remain postponed. No cu
 Immutable captured evidence belongs to the capsule/domain layer. Validation, sealing, replay, comparison, and regression evaluation may read it but must never repair or rewrite it. Future repair strategies may produce proposals or new derived artifacts only.
 
 The CLI and FastAPI dashboard are application interfaces over the same domain functions. Authentication belongs in API middleware. SQLite implements replay-history summaries plus local Kafka idempotency, assembly, and trace-correlation state without storing telemetry in or modifying capsule evidence; future databases belong behind storage interfaces. Kafka implements the optional `EventPublisher` transport boundary. Framework support belongs in optional adapters/plugins. Kubernetes and Terraform remain deployment concerns and cannot change replay semantics.
+
+See the responsibility-level [codebase map](codebase-map.md), operational [Kafka runbook](operations/kafka.md), and [observability runbook](operations/observability.md).

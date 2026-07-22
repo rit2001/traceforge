@@ -1,0 +1,147 @@
+# Codebase Map
+
+This document owns the current repository responsibility map. Update it whenever a component moves, changes ownership, gains a durable input/output, or adds an extension seam. It excludes generated caches, virtual environments, local databases, build outputs, and other ignored artifacts.
+
+## Schemas
+
+- **Responsibility:** Define the structural contracts for sealed Replay Capsules and transport capture events.
+- **Important files:** [schemas/replay-capsule-v0.schema.json](../schemas/replay-capsule-v0.schema.json), [schemas/capture-event-v0.schema.json](../schemas/capture-event-v0.schema.json), and [schemas/fixtures/capture-events/](../schemas/fixtures/capture-events/).
+- **Inputs:** UTF-8 JSON capsule documents or `0.2.0` capture-event envelopes.
+- **Outputs:** Structural acceptance or a validation failure.
+- **Invariants:** Draft 2020-12; TraceForge-owned objects reject unknown properties; schema validation does not prove semantic validity, integrity, ordering, idempotency, or secret absence.
+- **Extension points:** A new versioned schema plus compatibility/migration rules; never reinterpret an existing version silently.
+- **Tests:** [tests/test_capsule.py](../tests/test_capsule.py), [tests/test_capture_event_schema.py](../tests/test_capture_event_schema.py), [tests/test_capture_event_fixtures.py](../tests/test_capture_event_fixtures.py), and the Go validator tests.
+
+## Core Python Capsule, Sealing, and Validation
+
+- **Responsibility:** Canonicalize JSON, fingerprint requests, calculate capsule integrity, seal sanitized drafts, validate sealed evidence, expose precise domain errors, and load/save JSON.
+- **Important files:** [canonical.py](../src/traceforge/canonical.py), [schema.py](../src/traceforge/schema.py), [sealing.py](../src/traceforge/sealing.py), [validation.py](../src/traceforge/validation.py), [store.py](../src/traceforge/store.py), [exceptions.py](../src/traceforge/exceptions.py), and [interfaces.py](../src/traceforge/interfaces.py).
+- **Inputs:** Sanitized capsule drafts or sealed capsule documents.
+- **Outputs:** A new sealed document, validated immutable data, or a typed failure.
+- **Invariants:** Sealing does not mutate the caller's draft; validation never repairs; fingerprints and integrity use RFC 8785 plus SHA-256; unsupported versions fail; derived fields are recalculated by the sealer.
+- **Extension points:** `CapsuleStore` for retrieval, version-dispatched schemas/migrations, and explicitly versioned dependency kinds.
+- **Tests:** [tests/test_capsule.py](../tests/test_capsule.py) and [tests/test_cli.py](../tests/test_cli.py).
+
+## Replay and Regression
+
+- **Responsibility:** Supply recorded dependencies, block live network access, invoke trusted local runners, compare observations, evaluate a separate approved specification, and export pytest.
+- **Important files:** [dependencies.py](../src/traceforge/dependencies.py), [network.py](../src/traceforge/network.py), [replay.py](../src/traceforge/replay.py), [regression.py](../src/traceforge/regression.py), and [export.py](../src/traceforge/export.py).
+- **Inputs:** A valid sealed capsule, trusted `FrameworkAdapter`/runner, and optional regression specification.
+- **Outputs:** `ReplayResult`, assertion results, or a generated offline test file.
+- **Invariants:** Exact replay freezes model and tool/HTTP outcomes; requests match sequence and identity; missing/mismatched/extra dependencies fail closed; no live fallback; evidence remains unchanged; assertions live outside the capsule.
+- **Extension points:** `DependencyAdapter`, `FrameworkAdapter`, new comparison views, and future explicitly approved fork replay.
+- **Tests:** [tests/test_replay.py](../tests/test_replay.py), [tests/test_export.py](../tests/test_export.py), [tests/test_case_studies.py](../tests/test_case_studies.py), and [tests/test_langgraph_integration.py](../tests/test_langgraph_integration.py).
+
+## Capture SDK
+
+- **Responsibility:** Record invocation facts, dependency outcomes, execution events, and observations while applying best-effort sanitization before returning a draft.
+- **Important files:** [capture.py](../src/traceforge/capture.py), [capture_events.py](../src/traceforge/capture_events.py), [interfaces.py](../src/traceforge/interfaces.py), and [integrations/](../src/traceforge/integrations/).
+- **Inputs:** Local Python invocation data, model/HTTP request and outcome data, events, and an optional scanner.
+- **Outputs:** Sanitized unsealed capsule drafts or sanitized validated transport events.
+- **Invariants:** Secrets are never intentionally persisted; scan success is not proof of safety; derived fingerprints/integrity are absent until sealing; capture must not require LangGraph in core imports.
+- **Extension points:** `RedactionScanner`, framework adapters, dependency wrappers, and `EventPublisher`.
+- **Tests:** [tests/test_capture.py](../tests/test_capture.py), [tests/test_langgraph_integration.py](../tests/test_langgraph_integration.py), and capture-event tests.
+
+## Kafka Publisher
+
+- **Responsibility:** Validate and sanitize capture events, enqueue asynchronously with `capture_id` as the key, report accepted/dropped/failed enqueue outcomes, and bound shutdown.
+- **Important files:** [kafka.py](../src/traceforge/kafka.py) for the Python publisher and [publisher.go](../services/ingest-gateway/internal/publisher/publisher.go) for the Go publisher.
+- **Inputs:** Versioned capture events and broker configuration.
+- **Outputs:** Kafka records on `traceforge.capture.v1`, delivery counters/callbacks, or backpressure/unavailable status.
+- **Invariants:** No per-request flush; enqueue acceptance is not broker delivery or capsule completion; delivery is at least once; the key is the ordering scope; payloads are not evidence.
+- **Extension points:** `EventPublisher`, bounded producer configuration, and version-compatible transport implementations.
+- **Tests:** [tests/test_kafka_publisher.py](../tests/test_kafka_publisher.py) and [publisher_test.go](../services/ingest-gateway/internal/publisher/publisher_test.go).
+
+## Assembly State
+
+- **Responsibility:** Persist event IDs and per-capture sequence state, reject gaps/conflicts, deduplicate redelivery, assemble completed streams, seal capsules, and retain optional trace correlation.
+- **Important files:** [assembly.py](../src/traceforge/assembly.py) and [store.py](../src/traceforge/store.py).
+- **Inputs:** Sanitized ordered capture events.
+- **Outputs:** Durable SQLite state and one sealed JSON capsule per completed `capture_id`.
+- **Invariants:** `event_id` deduplication is idempotent handling, not exactly-once transport; sequence is contiguous per capture; a completed capture cannot reopen; trace correlation stays outside evidence.
+- **Extension points:** `AssemblyState` and future storage implementations that preserve atomic ordering, deduplication, and evidence rules.
+- **Tests:** [tests/test_assembly.py](../tests/test_assembly.py) and [tests/test_observability.py](../tests/test_observability.py).
+
+## Worker
+
+- **Responsibility:** Poll Kafka, attach W3C message context, process through assembly state, publish poison messages to the DLQ, and commit only after durable processing or confirmed DLQ delivery.
+- **Important files:** [kafka_worker.py](../src/traceforge/kafka_worker.py), [kafka_runtime.py](../src/traceforge/kafka_runtime.py), and worker wiring in [cli.py](../src/traceforge/cli.py).
+- **Inputs:** Records from `traceforge.capture.v1` and runtime paths/configuration.
+- **Outputs:** SQLite assembly changes, sealed capsules, `traceforge.capture.dlq.v1` records, metrics, and capture spans.
+- **Invariants:** Manual commits; no commit before persistence; no commit when DLQ confirmation fails; one message context is attached only for its processing scope; shutdown closes consumer/state and bounds DLQ flush.
+- **Extension points:** `ConsumerLike`, `DlqLike`, `AssemblyState`, telemetry provider, and operational configuration.
+- **Tests:** [tests/test_assembly.py](../tests/test_assembly.py) and [tests/test_observability.py](../tests/test_observability.py).
+
+## FastAPI and Dashboard
+
+- **Responsibility:** Provide a local health endpoint, upload/replay UI, JSON replay API, allow-listed controlled runners, metrics mount, and append-only replay summaries.
+- **Important files:** [web.py](../src/traceforge/web.py), [history.py](../src/traceforge/history.py), [templates/dashboard.html](../src/traceforge/templates/dashboard.html), and [static/dashboard.css](../src/traceforge/static/dashboard.css).
+- **Inputs:** Size-bounded JSON capsule/spec uploads and an allow-listed runner name.
+- **Outputs:** HTML/JSON replay results and local SQLite history summaries.
+- **Invariants:** No arbitrary dashboard runner import; uploads are bounded; dashboard history is operational metadata, not evidence; default binding is local; no authentication exists.
+- **Extension points:** API middleware for any future authentication, registered runners, `CapsuleStore`, and replay-history storage.
+- **Tests:** [tests/test_dashboard.py](../tests/test_dashboard.py) and [tests/test_observability.py](../tests/test_observability.py).
+
+## Examples
+
+- **Responsibility:** Supply controlled, sanitized, offline demonstrations and case studies.
+- **Important files:** [examples/weather/](../examples/weather/), [examples/rag-citation/](../examples/rag-citation/), [examples/tool-argument-safety/](../examples/tool-argument-safety/), and [src/traceforge/examples/](../src/traceforge/examples/).
+- **Inputs:** Versioned sealed capsules, separate regression specs, and recorded dependency fixtures.
+- **Outputs:** Replay results, the end-to-end demonstration, and generated tests in temporary/ignored locations.
+- **Invariants:** Controlled data only; no credentials, live calls, or unreviewed production traces; each expectation remains separate from evidence.
+- **Extension points:** New reviewed case directories paired with a trusted runner and focused tests.
+- **Tests:** [tests/test_case_studies.py](../tests/test_case_studies.py), [tests/test_replay.py](../tests/test_replay.py), and [tests/test_langgraph_integration.py](../tests/test_langgraph_integration.py).
+
+## Go Gateway
+
+- **Responsibility:** Accept bounded HTTP capture events, enforce media/body/schema/sensitive-value checks, expose health/readiness/metrics, enqueue asynchronously, propagate W3C context, and shut down within a bound.
+- **Important files:** [main.go](../services/ingest-gateway/cmd/ingest-gateway/main.go), [config/](../services/ingest-gateway/internal/config/), [events/](../services/ingest-gateway/internal/events/), [httpapi/](../services/ingest-gateway/internal/httpapi/), [publisher/](../services/ingest-gateway/internal/publisher/), and [telemetry/](../services/ingest-gateway/internal/telemetry/).
+- **Inputs:** `POST /v1/capture-events`, configuration, schema file, and optional W3C headers.
+- **Outputs:** HTTP `202/400/413/415/429/503`, Kafka records, bounded metrics, structured non-payload logs, and spans.
+- **Invariants:** `202` means local queue acceptance only; queue full is `429`; unready is `503`; payloads and secrets do not enter logs/spans; health and readiness are distinct.
+- **Extension points:** Publisher interface, configuration, validator versions, HTTP middleware, and telemetry setup owned by `main`.
+- **Tests:** All `_test.go` files under [services/ingest-gateway/](../services/ingest-gateway/), especially HTTP, publisher outage/recovery, schema fixture, and telemetry tests.
+
+## OpenTelemetry Collector and Metrics
+
+- **Responsibility:** Optionally receive local OTLP, batch/export local traces, expose Collector health and Prometheus metrics, and verify cross-service correlation without changing capsules.
+- **Important files:** [services/otel-collector.yaml](../services/otel-collector.yaml), [observability.py](../src/traceforge/observability.py), [metrics.py](../src/traceforge/metrics.py), and [scripts/gateway_smoke.py](../scripts/gateway_smoke.py).
+- **Inputs:** OTLP gRPC/HTTP signals, W3C context, and optional SQLite capture correlation.
+- **Outputs:** Local debug/file traces, Prometheus endpoints, and a sanitized ignored verification summary.
+- **Invariants:** Disabled by default outside configured services; startup owns providers/exporters; no payloads, credentials, raw user text, or high-cardinality identifiers in metric labels; replay is a separate linked trace.
+- **Extension points:** Service startup configuration, exporters after explicit approval, bounded metric families, and additional non-sensitive spans.
+- **Tests:** [tests/test_observability.py](../tests/test_observability.py), Go telemetry/HTTP/publisher tests, and the explicit local smoke verifier.
+
+## Docker and Compose
+
+- **Responsibility:** Package the local dashboard/worker/gateway and orchestrate a single-node Kafka plus optional Collector topology.
+- **Important files:** [Dockerfile](../Dockerfile), [Dockerfile.kafka](../Dockerfile.kafka), [services/ingest-gateway/Dockerfile](../services/ingest-gateway/Dockerfile), [compose.kafka.yml](../compose.kafka.yml), and [.dockerignore](../.dockerignore).
+- **Inputs:** Repository source, pinned base/service images, Compose configuration, and an optional data-directory override.
+- **Outputs:** Non-root application images, local services, Kafka named storage, and host-visible ignored capsule/SQLite/telemetry data.
+- **Invariants:** Local development only; loopback host ports; no production orchestration claim; ordinary shutdown preserves data; telemetry profile is optional.
+- **Extension points:** Local profiles and health checks. Deployment platforms require explicit milestone approval and ADRs.
+- **Tests:** Image health commands, Compose smoke verification recorded in [verification-ledger.md](verification-ledger.md), and application/Go tests outside containers.
+
+## Tests and CI
+
+- **Responsibility:** Verify offline domain behaviour, adapters, dashboard, assembly/DLQ semantics, observability contracts, shared cross-language fixtures, and package installation.
+- **Important files:** [tests/](../tests/), gateway `_test.go` files, and [.github/workflows/ci.yml](../.github/workflows/ci.yml).
+- **Inputs:** Controlled fixtures and fake/local adapters.
+- **Outputs:** Test, lint, package, and installed-CLI results.
+- **Invariants:** Default tests are offline; no paid/live API calls; a passing fixture proves only its tested scope; evidence claims require ledger entries.
+- **Extension points:** Focused regression tests adjacent to changed responsibilities and opt-in integration profiles.
+- **Tests:** This component is the test inventory itself; see [testing-strategy.md](testing-strategy.md).
+
+## Documentation
+
+- **Responsibility:** Preserve product intent, decisions, current state, contributor memory, component ownership, evidence, and local runbooks without duplicate authorities.
+- **Important files:** [PROJECT_MEMORY.md](../PROJECT_MEMORY.md), [docs/README.md](README.md), [project-state.md](project-state.md), ADRs, this map, [verification-ledger.md](verification-ledger.md), and [operations/](operations/).
+- **Inputs:** Approved decisions, executed evidence, code responsibility changes, and verified failure modes.
+- **Outputs:** Navigable current guidance and append-only/superseded historical records.
+- **Invariants:** One owner per fact; link rather than copy; never silently rewrite historical evidence; no unsupported product or production claim.
+- **Extension points:** New component documents, ADRs, ledger entries, and runbooks when the corresponding change is approved and verified.
+- **Tests:** Internal-link/path validation, prohibited-claim scans, and `git diff --check`.
+
+## Future Kubernetes and Terraform Locations
+
+No Kubernetes or Terraform directory exists, and no repository location is approved or reserved for either technology. If a future measured need and approved milestone justify one, an ADR must first define responsibility, location, security model, operational owner, tests, and the boundary that prevents deployment concerns from changing replay semantics. Until then, adding manifests, modules, or completion claims is out of scope.

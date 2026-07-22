@@ -1,6 +1,6 @@
 # Testing Strategy
 
-TraceForge has no implementation tests yet. This document defines future testing layers and the limits of what each layer can prove.
+TraceForge has Python and Go implementation tests plus bounded local Compose smoke verification. This document defines the test layers and the limits of what each layer can prove. Only executed results recorded in the [verification ledger](verification-ledger.md) are verification evidence.
 
 Default local and CI tests must make no paid API calls, no live model calls, and no live tool calls.
 
@@ -23,6 +23,8 @@ Does not prove:
 - A prompt improves real-world behaviour.
 - The integration with Agentic-chatbot works end to end.
 
+Current coverage includes capsule sealing/validation, exact replay failure modes, capture/redaction, regression/export, dashboard, capture-event schemas, Kafka publisher/assembly/DLQ semantics, OpenTelemetry correlation, metric-label bounds, and the Go gateway's validation, HTTP, publisher, telemetry, and outage/recovery boundaries.
+
 ## Offline Replay Tests
 
 Purpose:
@@ -41,7 +43,7 @@ Does not prove:
 - Broad framework compatibility.
 - Live model quality.
 
-## Integration Tests Against Agentic-chatbot
+## Future Integration Tests Against Agentic-chatbot
 
 Purpose:
 
@@ -97,3 +99,20 @@ Does not prove:
 - That unsanitized production traces are safe to commit.
 
 Fake-model tests validate mechanics, not real model quality. Do not invent benchmark, coverage, reliability, or adoption claims from these tests.
+
+## Local Distributed Smoke Tests
+
+Purpose:
+
+- Verify one bounded HTTP-to-Go-to-Kafka-to-Python-to-sealed-capsule-to-replay path.
+- Verify optional W3C propagation, a separate replay Span Link, local metrics endpoints, duplicate handling, and a bounded sensitive-attribute scan.
+
+Proves:
+
+- The tested local single-node topology connects the implemented components for the controlled scenario.
+
+Does not prove:
+
+- Production readiness, scale, long-running durability, exactly-once processing, universal secret absence, or operational recovery objectives.
+
+Integration commands are opt-in because they require a local Docker daemon. They must not make paid calls or contact external application/model APIs.

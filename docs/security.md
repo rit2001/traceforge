@@ -9,6 +9,10 @@ This is an initial security model for the local feasibility spike. It is not a p
 - Replay Capsule: crosses from the client application into TraceForge only after sanitization.
 - Live model provider: used only for explicit opt-in live experiments.
 - Default unit and CI tests: must remain offline and must not require credentials.
+- Go gateway and Kafka: accept and transport sanitized mutable events; they do not create immutable evidence.
+- Python worker and SQLite assembly state: order/deduplicate events and seal capsules; operational correlation remains outside evidence.
+- FastAPI dashboard: unauthenticated local interface with allow-listed runners and size-bounded uploads.
+- OpenTelemetry Collector: optional unencrypted/unauthenticated local diagnostic endpoint; it is not an evidence store or approved external export path.
 
 ## Capsule Data Risks
 
@@ -53,7 +57,9 @@ A fixture is safe for TraceForge only if:
 
 ## Local-First Assumptions
 
-The feasibility spike assumes local execution, local files, offline default tests, and no hosted upload. Live model use is separate, opt-in, and outside default CI.
+The implementation assumes local execution, local files, offline default tests, and no hosted upload. The optional Go/Kafka/Collector Compose topology binds host ports to loopback and remains development-only. Live model use is separate, opt-in, unimplemented in the current replay surface, and outside default CI.
+
+Telemetry must not contain capture payloads, dependency responses, credentials, authorization material, raw user messages, or high-cardinality identifiers in metric labels. Trace and span identifiers belong to operational telemetry/SQLite correlation, never Replay Capsules. Collector failure must not block capture, sealing, validation, or replay.
 
 ## Known Limitations
 
@@ -61,4 +67,5 @@ The feasibility spike assumes local execution, local files, offline default test
 - Replay Capsule v0 is defined by the accepted [contract](contracts/replay-capsule-v0.md) and [structural schema](../schemas/replay-capsule-v0.schema.json).
 - Safe fixture review criteria are not detailed yet.
 - No production threat model exists yet.
+- The local dashboard and OTLP endpoint have no authentication, and transport is not a production security design.
 - No claim is made that all possible sensitive values can be detected automatically.
