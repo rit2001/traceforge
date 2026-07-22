@@ -6,4 +6,6 @@ Kafka delivery failures happen after acceptance and are counted separately. The 
 
 Run locally with `docker compose -f compose.kafka.yml up --build`. The gateway listens on `127.0.0.1:18080`. `GET /healthz` reports process health; `GET /readyz` reports whether the Kafka-backed queue is accepting work.
 
+The local kind deployment runs this same image and configuration behind a ClusterIP Service. Access it only through the loopback port-forward in the [Kubernetes runbook](../operations/kubernetes.md); `202`, readiness, and backpressure semantics are unchanged.
+
 With the Compose `observability` profile, application startup configures the optional OTLP exporter. W3C HTTP trace context is continued through `capture.receive`, `capture.validate`, and `capture.publish`, then injected into Kafka headers. See [Local observability](../observability.md) for verification commands and limitations.

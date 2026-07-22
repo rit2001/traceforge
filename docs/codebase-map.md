@@ -142,6 +142,16 @@ This document owns the current repository responsibility map. Update it whenever
 - **Extension points:** New component documents, ADRs, ledger entries, and runbooks when the corresponding change is approved and verified.
 - **Tests:** Internal-link/path validation, prohibited-claim scans, and `git diff --check`.
 
-## Future Kubernetes and Terraform Locations
+## Local Kubernetes Deployment
 
-No Kubernetes or Terraform directory exists, and no repository location is approved or reserved for either technology. If a future measured need and approved milestone justify one, an ADR must first define responsibility, location, security model, operational owner, tests, and the boundary that prevents deployment concerns from changing replay semantics. Until then, adding manifests, modules, or completion claims is out of scope.
+- **Responsibility:** Schedule, connect, configure, constrain, probe, restart, and persist the existing distributed containers on one dedicated local kind cluster.
+- **Important files:** [Kustomize base](../deploy/kubernetes/base/kustomization.yaml), [kind overlay](../deploy/kubernetes/overlays/kind/kustomization.yaml), [kind cluster configuration](../deploy/kubernetes/overlays/kind/cluster.yaml), [lifecycle scripts](../scripts/kubernetes/), [smoke verifier](../scripts/kubernetes_smoke.py), and [Makefile](../Makefile).
+- **Inputs:** Existing Dockerfiles and explicit image tags, non-sensitive ConfigMap values, the kind `standard` storage class, and the controlled weather fixture.
+- **Outputs:** Gateway, Kafka, worker, API, and Collector workloads; only required Services; one local RWO PVC; and sanitized smoke/recovery results.
+- **Invariants:** Deployment concerns never alter replay semantics; worker replicas remain one with `Recreate`; SQLite is single writer; application containers use UID/GID 10001; Kafka and Collector remain local-development infrastructure; no Secret, LoadBalancer, Ingress, Helm, Terraform, cloud resource, or production claim is introduced.
+- **Extension points:** A separately approved overlay may change deployment configuration while preserving service and evidence boundaries. A cloud or production design requires measured need and a new or superseding ADR.
+- **Tests:** [tests/test_kubernetes_assets.py](../tests/test_kubernetes_assets.py), `make kind-validate`, and the opt-in real `make kind-smoke` gate recorded in the [verification ledger](verification-ledger.md).
+
+## Future Terraform Location
+
+No Terraform directory exists or is approved. A future measured need and separately approved milestone must define its responsibility, state/security model, operational owner, tests, and the boundary preventing infrastructure code from changing replay semantics.

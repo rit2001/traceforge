@@ -2,7 +2,7 @@
 
 ## Feasibility-Spike Architecture
 
-The original spike architecture was local, narrow, and file-based. The current v0.2 work preserves that replay core while adding an optional local asynchronous ingestion path.
+The original spike architecture was local, narrow, and file-based. The v0.2 work preserves that replay core while adding an optional local asynchronous ingestion path. The v0.3 deployment gate schedules the same path on a local kind Kubernetes cluster without changing replay semantics.
 
 Core components:
 
@@ -166,16 +166,24 @@ Python capture SDK/client
 
 The boundaries are intentionally asymmetric. Go owns bounded HTTP validation, readiness, backpressure, and asynchronous publishing; it does not assemble evidence or replay agents. Kafka owns retryable at-least-once transport, not evidence. Python owns event semantics, assembly, sealing, replay, and regression. SQLite owns local operational state but never becomes part of capsule integrity. The Collector observes local execution and may fail independently without invalidating capsules or replay.
 
+## Local Kubernetes Deployment
+
+The approved v0.3 deployment under `deploy/kubernetes` uses native manifests with a Kustomize base and a kind/local overlay. It runs the existing Go gateway image, shared Python worker/API image, Apache Kafka development broker, and OpenTelemetry Collector. Kubernetes adds local scheduling, restart, service discovery, ConfigMap injection, probes, resource constraints, security contexts, and PVC attachment around the existing containers. It does not introduce another implementation of any service or change event, capsule, replay, or telemetry semantics.
+
+Only in-cluster communication endpoints have Services: the gateway, Kafka, API, and Collector OTLP receiver. Host access uses explicit loopback `kubectl port-forward`; there is no LoadBalancer, Ingress, authentication, or TLS. Kafka and the Collector remain labelled local-development infrastructure.
+
+The single kind `ReadWriteOnce` claim holds worker assembly SQLite, sealed capsules, API replay history, and the Collector's bounded trace file in separate paths. The worker is fixed at one replica with `Recreate` strategy. SQLite remains a single-writer local operational store, not a distributed database. Kafka storage is ephemeral for this gate. See [ADR-0005](decisions/ADR-0005-local-kubernetes-kind-deployment.md) and the [Kubernetes runbook](operations/kubernetes.md).
+
 ## Postponed Infrastructure
 
 ClickHouse is postponed because the product is not yet a large-scale observability database. Local Replay Capsules and offline tests should prove value before analytical storage is considered.
 
-Terraform, Kubernetes, SaaS authentication, and payments remain postponed. No current verification supports production deployment, scale, or security claims.
+Terraform, cloud Kubernetes, SaaS authentication, and payments remain postponed. The local kind gate does not support production deployment, scale, high-availability, durability, or security claims.
 
 ## Layering and Future Placement
 
 Immutable captured evidence belongs to the capsule/domain layer. Validation, sealing, replay, comparison, and regression evaluation may read it but must never repair or rewrite it. Future repair strategies may produce proposals or new derived artifacts only.
 
-The CLI and FastAPI dashboard are application interfaces over the same domain functions. Authentication belongs in API middleware. SQLite implements replay-history summaries plus local Kafka idempotency, assembly, and trace-correlation state without storing telemetry in or modifying capsule evidence; future databases belong behind storage interfaces. Kafka implements the optional `EventPublisher` transport boundary. Framework support belongs in optional adapters/plugins. Kubernetes and Terraform remain deployment concerns and cannot change replay semantics.
+The CLI and FastAPI dashboard are application interfaces over the same domain functions. Authentication belongs in API middleware. SQLite implements replay-history summaries plus local Kafka idempotency, assembly, and trace-correlation state without storing telemetry in or modifying capsule evidence; future databases belong behind storage interfaces. Kafka implements the optional `EventPublisher` transport boundary. Framework support belongs in optional adapters/plugins. Kubernetes remains a deployment concern and cannot change replay semantics; Terraform remains postponed.
 
 See the responsibility-level [codebase map](codebase-map.md), operational [Kafka runbook](operations/kafka.md), and [observability runbook](operations/observability.md).

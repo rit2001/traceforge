@@ -1,6 +1,6 @@
 # Testing Strategy
 
-TraceForge has Python and Go implementation tests plus bounded local Compose smoke verification. This document defines the test layers and the limits of what each layer can prove. Only executed results recorded in the [verification ledger](verification-ledger.md) are verification evidence.
+TraceForge has Python and Go implementation tests plus bounded local Compose and kind smoke verification. This document defines the test layers and the limits of what each layer can prove. Only executed results recorded in the [verification ledger](verification-ledger.md) are verification evidence.
 
 Default local and CI tests must make no paid API calls, no live model calls, and no live tool calls.
 
@@ -116,3 +116,23 @@ Does not prove:
 - Production readiness, scale, long-running durability, exactly-once processing, universal secret absence, or operational recovery objectives.
 
 Integration commands are opt-in because they require a local Docker daemon. They must not make paid calls or contact external application/model APIs.
+
+## Local Kubernetes Gate
+
+Purpose:
+
+- Render and apply the Kustomize kind overlay around the existing images.
+- Verify workload readiness, one real capture/replay path, pod recreation, PVC survival across worker replacement, and effective non-root application identities.
+- Check static manifest invariants for explicit images, resources, probes, security contexts, Services, local-infrastructure labels, and dedicated-cluster automation.
+
+Proves:
+
+- The tested ARM64 Docker/kind/Kubernetes versions can run the five-workload local topology for one controlled scenario.
+- Kubernetes recreates the selected stateless pod and reattaches the local PVC to a replacement worker in this single-node cluster.
+
+Does not prove:
+
+- Cloud compatibility, multi-node scheduling, high availability, scale, Kafka durability, storage disaster recovery, authentication, TLS, or production security.
+- That a worker metrics probe detects stalled Kafka consumption; the end-to-end smoke supplies the bounded consumption evidence.
+
+The gate is opt-in, requires Docker and kind, uses no paid or external application API, and must delete the dedicated cluster after evidence is collected.

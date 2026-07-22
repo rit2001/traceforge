@@ -1,0 +1,58 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: traceforge
+resources:
+  - namespace.yaml
+  - persistent-volume-claim.yaml
+  - kafka-service.yaml
+  - kafka-statefulset.yaml
+  - ingest-gateway-service.yaml
+  - ingest-gateway-deployment.yaml
+  - worker-deployment.yaml
+  - api-service.yaml
+  - api-deployment.yaml
+  - otel-collector-service.yaml
+  - otel-collector-deployment.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: traceforge
+    includeSelectors: false
+configMapGenerator:
+  - name: kafka-config
+    literals:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=INTERNAL://:19092,CONTROLLER://:29093
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:19092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:29093
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+  - name: ingest-gateway-config
+    literals:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:19092
+      - KAFKA_TOPIC=traceforge.capture.v1
+      - PRODUCER_QUEUE_SIZE=256
+      - MAX_BODY_BYTES=1048576
+      - OTEL_SDK_DISABLED=false
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_INSECURE=true
+  - name: worker-config
+    literals:
+      - OTEL_SDK_DISABLED=false
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_INSECURE=true
+      - TRACEFORGE_WORKER_METRICS_PORT=9464
+  - name: api-config
+    literals:
+      - TRACEFORGE_HISTORY_PATH=/data/history.sqlite3
+      - OTEL_SDK_DISABLED=false
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_INSECURE=true
+  - name: otel-collector-config
+    files:
+      - config.yaml=otel-collector-config.yaml

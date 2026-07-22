@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traceforge-api
+  labels:
+    app.kubernetes.io/name: traceforge-api
+    app.kubernetes.io/component: dashboard
+spec:
+  selector:
+    app.kubernetes.io/name: traceforge-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

@@ -88,7 +88,7 @@ See [SECURITY.md](SECURITY.md) and the [Replay Capsule contract](docs/contracts/
 - Stronger scanning: future `RedactionScanner` implementations before sealing.
 - Repair experiments: may read evidence and propose changes, never rewrite evidence; automatic fixing is not guaranteed.
 - Distributed tracing and databases: future capture/storage adapters when measured need exists.
-- Kubernetes and Terraform: deployment concerns only after local value and operational requirements are demonstrated.
+- A native-Kustomize local kind deployment gate is available under `deploy/kubernetes`; it proves only the tested local topology. Cloud/production Kubernetes and Terraform remain postponed.
 
 ## Optional local distributed ingestion
 
