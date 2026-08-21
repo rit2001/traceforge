@@ -74,12 +74,12 @@ This document owns the current repository responsibility map. Update it whenever
 
 ## FastAPI and Dashboard
 
-- **Responsibility:** Provide a local health endpoint, upload/replay UI, JSON replay API, allow-listed controlled runners, metrics mount, and append-only replay summaries.
+- **Responsibility:** Provide a local health endpoint, responsive evidence/replay workbench, JSON replay API, startup-only registered runners, packaged built-in examples, metrics mount, and append-only replay summaries.
 - **Important files:** [web.py](../src/traceforge/web.py), [history.py](../src/traceforge/history.py), [templates/dashboard.html](../src/traceforge/templates/dashboard.html), and [static/dashboard.css](../src/traceforge/static/dashboard.css).
-- **Inputs:** Size-bounded JSON capsule/spec uploads and an allow-listed runner name.
+- **Inputs:** Size-bounded JSON capsule/spec evidence selected as one explicit example/upload/paste mode and a runner ID registered at server startup.
 - **Outputs:** HTML/JSON replay results and local SQLite history summaries.
-- **Invariants:** No arbitrary dashboard runner import; uploads are bounded; dashboard history is operational metadata, not evidence; default binding is local; no authentication exists.
-- **Extension points:** API middleware for any future authentication, registered runners, `CapsuleStore`, and replay-history storage.
+- **Invariants:** No arbitrary dashboard runner import; custom `ID=MODULE:FUNCTION` registrations are trusted local startup configuration only, never browser/API data; uploads are bounded; built-in examples have fixed reviewed paths; dashboard history is operational metadata, not evidence; default binding is local; no authentication exists.
+- **Extension points:** API middleware for any future authentication, registered runners, `CapsuleStore`, replay-history storage, and reviewed built-in examples. Dynamic registration is not sandboxing.
 - **Tests:** [tests/test_dashboard.py](../tests/test_dashboard.py) and [tests/test_observability.py](../tests/test_observability.py).
 
 ## Examples

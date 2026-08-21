@@ -2,7 +2,7 @@
 
 These are concise troubleshooting notes for the optional local Compose and kind topologies. They are development runbooks, not production procedures, SLOs, or evidence of operational readiness.
 
-For the native-Kustomize local Kubernetes deployment, use the dedicated [kind runbook](kubernetes.md). For the Terraform-backed foundation and ordered ownership lifecycle, use the [Terraform runbook](terraform.md). The Compose commands below remain valid for the original single-host topology.
+For the native-Kustomize local Kubernetes deployment, use the dedicated [kind runbook](kubernetes.md). For the Terraform-backed foundation and ordered ownership lifecycle, use the [Terraform runbook](terraform.md). For the localhost replay workbench and trusted custom runner registration, use the [dashboard runbook](dashboard.md). The Compose commands below remain valid for the original single-host topology.
 
 ## Clean Startup
 

@@ -3,37 +3,168 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TraceForge Replay</title>
+  <title>TraceForge Replay Workbench</title>
   <link rel="stylesheet" href="/static/dashboard.css">
 </head>
 <body>
-  <main>
-    <header><p class="eyebrow">LOCAL REPLAY WORKBENCH</p><h1>TraceForge</h1><p>Validate immutable evidence, replay recorded dependencies, and inspect approved behaviour.</p></header>
-    <section class="panel controls">
-      <label>Registered runner<select id="runner">{% for runner in runners %}<option>{{ runner }}</option>{% endfor %}</select></label>
-      <label>Capsule JSON<input id="capsule-file" type="file" accept="application/json"><textarea id="capsule" placeholder="Paste or upload a sealed capsule"></textarea></label>
-      <label>Regression specification<input id="spec-file" type="file" accept="application/json"><textarea id="spec" placeholder="Paste or upload a regression specification"></textarea></label>
-      <button id="run">Validate &amp; replay</button><p id="status" role="status"></p>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="wordmark">TraceForge</p>
+        <p class="eyebrow">Replay-first agent debugging</p>
+        <h1>Inspect a recorded run. Reproduce it exactly.</h1>
+        <p class="lede">A local workbench for replaying immutable evidence with recorded dependencies and zero live fallback.</p>
+      </div>
+      <ul class="status-list" aria-label="TraceForge guarantees">
+        <li>Local only</li><li>Exact replay</li><li>Zero live fallback</li>
+      </ul>
+    </header>
+
+    <section id="workbench" class="workbench" aria-label="Replay workbench">
+      <form id="replay-form" class="panel configuration" novalidate>
+        <div class="section-heading"><div><p class="section-kicker">01 — Scenario</p><h2>Choose a replay case</h2></div><code id="runner-id"></code></div>
+        <div id="scenario-list" class="scenario-list" role="radiogroup" aria-label="Registered replay runners">
+          {% for runner in runners %}
+          <button class="scenario-card{% if loop.first %} is-selected{% endif %}" type="button" role="radio" aria-checked="{{ 'true' if loop.first else 'false' }}" data-runner-id="{{ runner.id }}" data-example="{{ 'true' if runner.has_example else 'false' }}">
+            <span class="scenario-meta">{{ runner.classification }}</span><strong>{{ runner.name }}</strong><span>{{ runner.description }}</span>
+          </button>
+          {% endfor %}
+        </div>
+        <aside class="project-callout"><strong>Connect your project</strong><p>These cards are reviewed built-in demonstrations. Custom projects connect through trusted startup-time runners; registered custom runners appear automatically.</p><code>traceforge serve \
+  --runner my-agent=my_project.traceforge_runner:run</code></aside>
+
+        <div class="section-heading evidence-heading"><div><p class="section-kicker">02 — Evidence</p><h2>Provide reviewed inputs</h2></div></div>
+        <div class="mode-tabs" role="tablist" aria-label="Evidence source">
+          <button type="button" role="tab" aria-selected="true" id="tab-example" data-mode="example">Try example</button>
+          <button type="button" role="tab" aria-selected="false" id="tab-upload" data-mode="upload">Upload JSON</button>
+          <button type="button" role="tab" aria-selected="false" id="tab-paste" data-mode="paste">Paste JSON</button>
+        </div>
+        <div id="mode-message" class="mode-message" role="status"></div>
+        <section class="evidence-mode" id="mode-example" data-mode-panel="example">
+          <p>Load the matching reviewed, sanitized capsule and developer-approved regression specification.</p>
+          <button id="load-example" class="secondary-action" type="button">Load verified example</button>
+        </section>
+        <section class="evidence-mode" id="mode-upload" data-mode-panel="upload" hidden>
+          <p class="input-explainer">Upload <strong>Replay Capsule evidence</strong> and a <strong>regression specification</strong>. Source repositories are connected through trusted local runners; they are never executed from browser uploads.</p>
+          <div class="upload-grid">
+            <label class="drop-zone" for="capsule-file"><span>Replay Capsule</span><span class="drop-hint">Choose a JSON file</span><input id="capsule-file" type="file" accept="application/json,.json"><output id="capsule-file-state">No file selected</output></label>
+            <label class="drop-zone" for="spec-file"><span>Regression specification</span><span class="drop-hint">Choose a JSON file</span><input id="spec-file" type="file" accept="application/json,.json"><output id="spec-file-state">No file selected</output></label>
+          </div>
+          <button id="remove-files" class="text-action" type="button">Remove uploaded files</button>
+        </section>
+        <section class="evidence-mode" id="mode-paste" data-mode-panel="paste" hidden>
+          <label for="capsule"><span>Replay Capsule JSON</span><textarea id="capsule" spellcheck="false" placeholder='{ "schema_version": "0.1.0", ... }'></textarea></label>
+          <label for="spec"><span>Regression specification JSON</span><textarea id="spec" spellcheck="false" placeholder='{ "schema_version": "0.1.0", "assertions": [...] }'></textarea></label>
+          <button id="clear-paste" class="text-action" type="button">Clear pasted JSON</button>
+        </section>
+        <button id="run" class="primary-action" type="submit" disabled>Run exact replay</button>
+        <p id="form-status" class="form-status" role="status" aria-live="polite"></p>
+      </form>
+
+      <section class="report" aria-label="Replay report">
+        <div id="result" class="result-state empty-state" aria-live="polite">
+          <p class="section-kicker">03 — Replay report</p><h2>Ready when your evidence is.</h2>
+          <ol><li>Choose a registered local runner.</li><li>Load, upload, or paste a capsule and specification.</li><li>Run exact replay against recorded dependencies only.</li></ol>
+          <p>TraceForge uses the recorded timeline; it never substitutes a live model or tool call.</p>
+        </div>
+      </section>
     </section>
-    <section id="result" class="grid empty"><div class="panel"><h2>Empty state</h2><p>Choose local JSON artifacts to inspect invocation, dependency timeline, observations, comparison, and assertions.</p></div></section>
-    <section class="panel"><h2>Replay history</h2>{% if history %}<div class="timeline">{% for item in history %}<article><strong>{{ item.technical_result }}</strong><span>{{ item.runner }}</span><small>{{ item.created_at }}</small>{% if item.error_summary %}<p class="error">{{ item.error_summary }}</p>{% endif %}</article>{% endfor %}</div>{% else %}<p>No local replays yet.</p>{% endif %}</section>
+
+    <section class="history panel" aria-labelledby="history-title">
+      <div class="section-heading"><div><p class="section-kicker">Local history</p><h2 id="history-title">Recent replays</h2></div></div>
+      {% if history %}<div class="history-list">{% for item in history %}<article><time>{{ item.created_at }}</time><span>{{ item.runner }}</span><span>{{ item.technical_result }}</span><span>{{ item.behavioural_result or 'not evaluated' }}</span><a href="#workbench" data-history-runner="{{ item.runner }}">Replay again</a></article>{% endfor %}</div>{% else %}<p class="history-empty">No local replays yet. Completed replays stay as compact local operational metadata.</p>{% endif %}
+    </section>
   </main>
 <script>
-const readFile = (input, target) => input.addEventListener('change', async () => { target.value = await input.files[0].text(); });
-readFile(document.querySelector('#capsule-file'), document.querySelector('#capsule'));
-readFile(document.querySelector('#spec-file'), document.querySelector('#spec'));
-document.querySelector('#run').addEventListener('click', async () => {
-  const status = document.querySelector('#status'); const result = document.querySelector('#result');
-  try {
-    status.textContent = 'Running offline replay…';
-    const response = await fetch('/api/replay', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({runner:document.querySelector('#runner').value, capsule:JSON.parse(document.querySelector('#capsule').value), spec:JSON.parse(document.querySelector('#spec').value)})});
-    const data = await response.json(); if (!response.ok) throw new Error(data.error);
-    const sections = [['Invocation', data.invocation], ['Dependency timeline', data.dependencies], ['Original observation', data.original_observation], ['Replay observation', data.replay_observation], ['Comparison', data.comparison], ['Behavioural assertions', data.regression]];
-    result.className = 'grid'; result.replaceChildren();
-    for (const [name,value] of sections) { const article=document.createElement('article'); article.className='panel'; const heading=document.createElement('h2'); heading.textContent=name; const pre=document.createElement('pre'); pre.textContent=JSON.stringify(value,null,2); article.append(heading,pre); result.append(article); }
-    status.textContent = 'Replay complete.';
-  } catch (error) { result.className='grid'; result.replaceChildren(); const article=document.createElement('article'); article.className='panel error'; const heading=document.createElement('h2'); heading.textContent='Replay failed'; const message=document.createElement('p'); message.textContent=error.message; article.append(heading,message); result.append(article); status.textContent=''; }
-});
+(() => {
+  const maxBytes = {{ 1000000 }};
+  const form = document.querySelector('#replay-form');
+  const scenarios = [...document.querySelectorAll('.scenario-card')];
+  const modeTabs = [...document.querySelectorAll('[data-mode]')];
+  const modePanels = [...document.querySelectorAll('[data-mode-panel]')];
+  const run = document.querySelector('#run');
+  const status = document.querySelector('#form-status');
+  const result = document.querySelector('#result');
+  const runnerId = document.querySelector('#runner-id');
+  const modeMessage = document.querySelector('#mode-message');
+  const capsule = document.querySelector('#capsule');
+  const spec = document.querySelector('#spec');
+  let selectedRunner = scenarios[0]?.dataset.runnerId;
+  let sourceMode = 'example';
+  let evidence = { capsule: null, spec: null };
+
+  const text = (tag, value, className) => { const node = document.createElement(tag); node.textContent = value; if (className) node.className = className; return node; };
+  const json = (tag, value) => { const pre = document.createElement(tag); pre.textContent = JSON.stringify(value, null, 2); return pre; };
+  const setStatus = (message) => { status.textContent = message; };
+  const selected = () => scenarios.find((item) => item.dataset.runnerId === selectedRunner);
+  const ready = () => Boolean(selectedRunner && evidence.capsule && evidence.spec);
+  const updateAction = () => { run.disabled = !ready() || run.dataset.running === 'true'; };
+  const clearEvidence = () => { evidence = { capsule: null, spec: null }; capsule.value = ''; spec.value = ''; updateAction(); };
+  const setMode = (mode) => {
+    sourceMode = mode; clearEvidence();
+    modeTabs.forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.mode === mode)));
+    modePanels.forEach((panel) => { panel.hidden = panel.dataset.modePanel !== mode; });
+    modeMessage.textContent = mode === 'example' ? 'Choose a built-in demo, then load its matching reviewed evidence.' : mode === 'upload' ? 'Choose two JSON files. Nothing runs until you choose Run exact replay.' : 'Paste both JSON documents. Nothing runs until you choose Run exact replay.';
+  };
+  const selectRunner = (id) => {
+    selectedRunner = id;
+    scenarios.forEach((card) => { const active = card.dataset.runnerId === id; card.classList.toggle('is-selected', active); card.setAttribute('aria-checked', String(active)); });
+    const card = selected(); runnerId.textContent = card ? card.dataset.runnerId : '';
+    if (sourceMode === 'example' && card?.dataset.example !== 'true') setMode('upload');
+    clearEvidence(); setStatus('');
+  };
+  const renderError = (error) => {
+    result.className = 'result-state error-state'; result.replaceChildren(text('p', 'Replay report', 'section-kicker'), text('h2', error.title || 'Replay failed'), text('p', error.message || 'TraceForge could not complete the replay.'), text('p', error.action || 'Review the local evidence and try again.', 'next-action'));
+  };
+  const summary = (label, value, tone) => { const article = document.createElement('article'); article.className = `summary-card ${tone}`; article.append(text('span', label), text('strong', value)); return article; };
+  const details = (title, value) => { const node = document.createElement('details'); node.append(text('summary', title), json('pre', value)); return node; };
+  const renderResult = (data) => {
+    const regressionPassed = data.regression?.passed === true;
+    const regressionLabel = data.regression ? (regressionPassed ? 'Passed' : 'Failed') : 'Not evaluated';
+    result.className = 'result-state success-state'; result.replaceChildren();
+    result.append(text('p', 'Replay report', 'section-kicker'), text('h2', regressionPassed ? 'Replay completed with approved behaviour.' : 'Replay completed; review the behavioural verdict.'));
+    const summaries = document.createElement('div'); summaries.className = 'summary-grid';
+    const changedExpected = !data.comparison?.deterministic_match && regressionPassed;
+    const matchLabel = data.comparison?.deterministic_match ? 'Matched' : changedExpected ? 'Changed — expected repair' : 'Changed';
+    const matchTone = data.comparison?.deterministic_match ? 'good' : changedExpected ? 'neutral' : 'bad';
+    summaries.append(summary('Technical status', data.technical_status === 'completed' ? 'Completed' : data.technical_status, data.technical_status === 'completed' ? 'good' : 'bad'), summary('Behavioural verdict', regressionLabel, regressionPassed ? 'good' : 'bad'), summary('Deterministic observation match', matchLabel, matchTone));
+    result.append(summaries);
+    if (changedExpected) result.append(text('p', 'The replay differs from the preserved failing observation and satisfies the approved regression.', 'expected-repair'));
+    const assertions = document.createElement('section'); assertions.className = 'report-section'; assertions.append(text('h3', 'Regression assertions'));
+    const assertionList = document.createElement('ul'); assertionList.className = 'assertion-list';
+    for (const assertion of data.regression?.assertions || []) { const item = text('li', `${assertion.passed ? 'Passed' : 'Failed'} — ${assertion.path || assertion.kind || 'assertion'}`, assertion.passed ? 'passed' : 'failed'); assertionList.append(item); }
+    if (!assertionList.children.length) assertionList.append(text('li', 'No regression specification was evaluated.'));
+    assertions.append(assertionList); result.append(assertions);
+    const timeline = document.createElement('section'); timeline.className = 'report-section'; timeline.append(text('h3', 'Recorded dependency timeline'));
+    const timelineList = document.createElement('ol'); timelineList.className = 'dependency-list';
+    for (const dependency of data.dependencies || []) timelineList.append(text('li', `${dependency.sequence}. ${dependency.kind} · ${dependency.operation}`));
+    if (!timelineList.children.length) timelineList.append(text('li', 'No recorded dependencies.')); timeline.append(timelineList); result.append(timeline);
+    const compare = document.createElement('section'); compare.className = 'comparison-grid';
+    const original = document.createElement('article'); original.append(details('Original observation', data.original_observation));
+    const replay = document.createElement('article'); replay.append(details('Replay observation', data.replay_observation)); compare.append(original, replay); result.append(compare);
+    const ignored = data.comparison?.ignored_fields || []; result.append(text('p', ignored.length ? `Ignored diagnostic fields: ${ignored.join(', ')}.` : 'No diagnostic fields were ignored.', 'ignored-fields'));
+    result.append(details('Raw invocation', data.invocation), details('Raw dependency payloads', data.dependencies), details('Raw comparison and assertions', { comparison: data.comparison, regression: data.regression }));
+  };
+  const readUpload = async (input, target) => {
+    const state = document.querySelector(`#${input.id}-state`); const file = input.files?.[0];
+    if (!file) return; if (file.size > maxBytes) { state.textContent = 'Invalid: file exceeds 1 MB'; target.value = ''; updateAction(); return; }
+    if (!file.name.toLowerCase().endsWith('.json')) { state.textContent = 'Invalid: choose a JSON file'; target.value = ''; updateAction(); return; }
+    try { target.value = await file.text(); JSON.parse(target.value); state.textContent = `Valid: ${file.name} (${file.size.toLocaleString()} bytes)`; } catch { target.value = ''; state.textContent = `Invalid JSON: ${file.name}`; }
+    if (document.querySelector('#capsule-file-state').textContent.startsWith('Valid:') && document.querySelector('#spec-file-state').textContent.startsWith('Valid:')) { evidence = { capsule: JSON.parse(capsule.value), spec: JSON.parse(spec.value) }; } else { evidence = { capsule: null, spec: null }; } updateAction();
+  };
+  scenarios.forEach((card) => card.addEventListener('click', () => selectRunner(card.dataset.runnerId)));
+  modeTabs.forEach((tab) => tab.addEventListener('click', () => setMode(tab.dataset.mode)));
+  document.querySelector('#capsule-file').addEventListener('change', (event) => readUpload(event.currentTarget, capsule));
+  document.querySelector('#spec-file').addEventListener('change', (event) => readUpload(event.currentTarget, spec));
+  [capsule, spec].forEach((field) => field.addEventListener('input', () => { if (sourceMode !== 'paste') return; try { evidence = { capsule: JSON.parse(capsule.value), spec: JSON.parse(spec.value) }; setStatus('JSON is ready for exact replay.'); } catch { evidence = { capsule: null, spec: null }; setStatus('Provide valid JSON in both editors.'); } updateAction(); }));
+  document.querySelector('#clear-paste').addEventListener('click', () => { clearEvidence(); setStatus('Pasted JSON cleared.'); });
+  document.querySelector('#remove-files').addEventListener('click', () => { document.querySelector('#capsule-file').value = ''; document.querySelector('#spec-file').value = ''; document.querySelector('#capsule-file-state').textContent = 'No file selected'; document.querySelector('#spec-file-state').textContent = 'No file selected'; clearEvidence(); });
+  document.querySelector('#load-example').addEventListener('click', async () => { try { setStatus('Loading reviewed example…'); const response = await fetch(`/api/examples/${encodeURIComponent(selectedRunner)}`); const data = await response.json(); if (!response.ok) throw data.error; evidence = data; capsule.value = JSON.stringify(data.capsule, null, 2); spec.value = JSON.stringify(data.spec, null, 2); setStatus('Verified example loaded. Review it, then run exact replay.'); updateAction(); } catch (error) { renderError(error); setStatus('Example could not be loaded.'); } });
+  form.addEventListener('submit', async (event) => { event.preventDefault(); if (!ready() || run.dataset.running === 'true') return; run.dataset.running = 'true'; run.textContent = 'Running exact replay…'; updateAction(); setStatus('Replaying recorded dependencies with no live fallback…'); result.className = 'result-state loading-state'; result.replaceChildren(text('p', 'Replay report', 'section-kicker'), text('h2', 'Running exact replay'), text('p', 'Validating immutable evidence and replaying the recorded dependency timeline.'));
+    try { const response = await fetch('/api/replay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ runner: selectedRunner, source_mode: sourceMode, capsule: evidence.capsule, spec: evidence.spec }) }); const data = await response.json(); if (!response.ok) throw data.error; renderResult(data); setStatus('Replay complete.'); } catch (error) { renderError(error); setStatus('Replay needs attention.'); } finally { delete run.dataset.running; run.textContent = 'Run exact replay'; updateAction(); } });
+  document.querySelectorAll('[data-history-runner]').forEach((link) => link.addEventListener('click', () => selectRunner(link.dataset.historyRunner)));
+  selectRunner(selectedRunner); setMode('example');
+})();
 </script>
 </body>
 </html>

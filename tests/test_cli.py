@@ -3,9 +3,20 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+from traceforge import __version__
 from traceforge.cli import main
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_cli_version(capsys) -> None:
+    with pytest.raises(SystemExit) as exit_info:
+        main(["--version"])
+
+    assert exit_info.value.code == 0
+    assert capsys.readouterr().out == f"traceforge {__version__}\n"
 
 
 def test_cli_seal_then_validate(capsule_draft: dict, tmp_path: Path, capsys) -> None:

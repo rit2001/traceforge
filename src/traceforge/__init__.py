@@ -1,5 +1,7 @@
 """TraceForge Replay Capsule validation and sealing."""
 
+__version__ = "0.4.1"
+
 from traceforge.capture import BestEffortRedactionScanner, CaptureSession
 from traceforge.exceptions import (
     DependencyMismatchError,
@@ -17,6 +19,7 @@ from traceforge.sealing import seal_capsule
 from traceforge.validation import validate_capsule
 
 __all__ = [
+    "__version__",
     "DependencyMismatchError",
     "BestEffortRedactionScanner",
     "CaptureSession",

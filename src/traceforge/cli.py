@@ -8,6 +8,7 @@ import os
 import sys
 from pathlib import Path
 
+from traceforge import __version__
 from traceforge.exceptions import TraceForgeError
 from traceforge.export import export_pytest
 from traceforge.replay import load_runner, replay_exact
@@ -20,6 +21,7 @@ _STORE = JsonFileCapsuleStore()
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="traceforge")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
 
     seal = commands.add_parser("seal", help="seal a Replay Capsule draft")
@@ -44,6 +46,13 @@ def _parser() -> argparse.ArgumentParser:
     serve = commands.add_parser("serve", help="serve the local replay dashboard")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", default=8000, type=int)
+    serve.add_argument(
+        "--runner",
+        action="append",
+        default=[],
+        metavar="ID=MODULE:FUNCTION",
+        help="register trusted local runner code at dashboard startup; may be repeated",
+    )
 
     worker = commands.add_parser("worker", help="run an asynchronous capture worker")
     worker_commands = worker.add_subparsers(dest="worker_kind", required=True)
@@ -94,7 +103,8 @@ def main(argv: list[str] | None = None) -> int:
                                 "TRACEFORGE_HISTORY_PATH",
                                 str(Path.cwd() / ".traceforge-history.sqlite3"),
                             )
-                        )
+                        ),
+                        runner_registrations=args.runner,
                     ),
                     host=args.host,
                     port=args.port,
