@@ -21,10 +21,13 @@ class PublishResult:
     detail: str
 
 
+DEFAULT_CAPTURE_TOPIC = "traceforge.capture.v1"
+
+
 class KafkaEventPublisher:
     """Enqueue validated events; broker delivery remains asynchronous."""
 
-    def __init__(self, producer: ProducerLike, topic: str = "traceforge.capture.v0") -> None:
+    def __init__(self, producer: ProducerLike, topic: str = DEFAULT_CAPTURE_TOPIC) -> None:
         self._producer = producer
         self._topic = topic
         self.completed_deliveries = 0

@@ -44,6 +44,7 @@ def test_publisher_sanitizes_keys_and_enqueues_without_flush() -> None:
     publisher = KafkaEventPublisher(producer)
     result = publisher.publish(_event())
     assert result.status == "accepted"
+    assert producer.calls[0]["topic"] == "traceforge.capture.v1"
     assert producer.calls[0]["key"] == b"capture-1"
     assert b"synthetic-secret" not in producer.calls[0]["value"]
     assert producer.flush_calls == 0
