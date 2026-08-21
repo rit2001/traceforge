@@ -4,7 +4,7 @@ Last verified date: 2026-08-21.
 
 ## Current Phase
 
-The replay feasibility implementation, optional local distributed-ingestion and observability v0.2 path, repository-memory milestone, local Kubernetes v0.3 gate, local Terraform foundation v0.4, and local Public Beta v0.4.1 release gate are complete. GitHub publication is the remaining release operation.
+The replay feasibility implementation, optional local distributed-ingestion and observability v0.2 path, repository-memory milestone, local Kubernetes v0.3 gate, local Terraform foundation v0.4, and Public Beta v0.4.1 source/CI gates are complete. The GitHub repository is public with `main` and `release/v0.4.1` pushed; the tag and GitHub Release remain.
 
 ## Current Milestone
 
@@ -72,7 +72,7 @@ Cloud Terraform, remote production state, cloud/production Kubernetes, Helm, ope
 
 ## Exact Next Approved Task
 
-Publish the verified `v0.4.1` history to the existing GitHub repository, configure the public repository/community metadata, create the release branch and tag, publish the GitHub Release, and stop before `v0.5.0` implementation.
+Create the annotated `v0.4.1` tag on the final verified `main` commit, publish the Experimental Beta GitHub Release, complete the external repository/protection check, and stop before `v0.5.0` implementation.
 
 ## Milestone-Boundary Checklist
 
