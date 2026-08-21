@@ -1,168 +1,108 @@
-# Roadmap
+# TraceForge Roadmap
 
-TraceForge uses evidence-based stage gates. Stages advance only when the exit criteria are met, not because a deadline elapsed.
+TraceForge advances through evidence-based milestones. An item is implemented only when code, tests, and the relevant operational or contract documentation agree. Dates are intentionally omitted until scope is approved and verifiable.
 
-The replay feasibility loop passed, an optional local Go/Kafka/Collector v0.2 path was implemented, the v0.3 gate ran that same stack on local kind with native Kustomize, and v0.4 added a bounded Terraform-managed Kubernetes foundation. Cloud Terraform, cloud Kubernetes, distributed storage, and additional microservices remain postponed until measured needs and another separately approved milestone require them.
+## Current Implementation
 
-## Current Implementation Evidence
+The `v0.4.1` line contains the replay-first local core and a bounded optional distributed-ingestion path. Exact replay, regression evaluation, pytest export, the controlled examples, local workbench, Go/Kafka/Python assembly path, bounded OpenTelemetry/Prometheus instrumentation, Docker Compose, local kind/Kustomize, and the narrow local Terraform foundation have implementation evidence.
 
-As of 2026-07-22, documentation and Replay Capsule v0, validation/sealing, exact offline replay, separate regression evaluation, pytest export, best-effort capture/redaction, one optional LangGraph integration, a local FastAPI/SQLite dashboard, the optional distributed path, and its local kind deployment gate are implemented and tested with controlled local data. Fork replay, real Agentic-chatbot integration, measured live experiments, hosted services, and production hardening are not complete.
+Capture remains controlled rather than generic. Fork replay, fresh-model replay, production infrastructure, hosted operation, and benchmark claims are not implemented.
 
-The local dashboard is an MVP inspection surface, not evidence that production service-infrastructure criteria are met. Docker and CI package the local product; the optional single-node Kafka/Go/Collector Compose, kind, and Terraform topologies are development evidence only. Cloud Terraform, cloud/production Kubernetes, distributed storage, SaaS authentication, and payments remain postponed.
+## v0.4.1 — Public Beta
 
-## Stage 0: Documentation and Feasibility Definition
+Goal: publish the current replay-first system as a clean, accurate Experimental Beta.
 
-Entry criteria:
+Included:
 
-- Repository exists.
-- Product definition and boundaries are known.
+- Replay Capsule `0.1.0`, sealing, integrity, and validation;
+- deterministic exact offline replay of recorded model and HTTP outcomes;
+- deterministic comparison, separate developer-approved regression specifications, and pytest export;
+- CLI, local FastAPI replay workbench, SQLite replay history, and controlled examples;
+- bounded Go ingestion gateway → Kafka → Python assembly worker path;
+- local W3C propagation, optional OpenTelemetry spans, and Prometheus metrics;
+- Docker Compose, native kind/Kustomize, and narrow local Terraform foundation;
+- public documentation, contributor framework, and release verification.
 
-Exit criteria:
+This milestone does not include fork replay, a generic capture SDK, production deployment, or performance claims.
 
-- Core documentation exists.
-- Current project state is recorded.
-- Weather replay spike is defined.
-- Significant initial decisions are captured in ADRs.
+## v0.5.0 — Real Agent Capture
 
-Non-goals:
+Primary goal: prove TraceForge against one real, sanitized LangGraph agent application without broadening the product boundary prematurely.
 
-- Source code.
-- Package metadata.
-- Docker or service infrastructure.
-- Test fixtures.
+Planned work:
 
-## Stage 1: Controlled Weather Grounding Capsule
+- stabilize the capture API around the evidence needed by replay;
+- integrate one real LangGraph application using sanitized data;
+- strengthen framework capture while preserving explicit boundaries;
+- define and implement a generic tool dependency contract;
+- connect `CaptureSession` to the event transport in an intentional integration path;
+- introduce a richer, reviewable execution diff; and
+- publish a reproducible integration tutorial.
 
-Entry criteria:
+Exit evidence should include an offline, sanitized capture → seal → exact replay → regression path for the selected application. This is not a claim of arbitrary Python or LangGraph support.
 
-- Weather replay spike is approved.
-- Agentic-chatbot integration boundary is understood.
+## v0.6.0 — Fork Replay
 
-Exit criteria:
+Primary goal: implement an explicit replay mode that can change model or prompt behavior while freezing approved dependency outcomes.
 
-- Controlled local weather failure is described.
-- Required captured fields are defined.
-- Sanitization requirements are defined.
-- Acceptance criteria for a safe fixture are approved.
+Planned work:
 
-Non-goals:
+- specify and implement fork replay semantics;
+- freeze recorded tool and dependency outcomes;
+- make fresh-model execution explicit, opt-in, and excluded from default CI;
+- compare messages, tool calls, graph nodes, and execution paths;
+- improve replay comparison output; and
+- define a proposal/review workflow for regression expectations.
 
-- Live model evaluation.
-- Production incident claims.
-- Copying Agentic-chatbot source code.
-- Accessing `.env` files.
+All items in this milestone are **planned**. Exact replay remains the only implemented replay mode in `v0.4.1`.
 
-## Stage 2: Exact Offline Replay
+## v0.7.0 — Pipeline Reliability
 
-Entry criteria:
+Primary goal: make the bounded local event pipeline's failure and recovery behavior explicit and testable.
 
-- Weather Grounding Capsule fields are defined.
-- A sanitized fixture plan exists.
+Planned work:
 
-Exit criteria:
+- producer retry semantics;
+- bounded shutdown draining;
+- worker readiness;
+- Kafka consumer-lag metrics;
+- DLQ inspection and redrive;
+- multi-partition behavior;
+- consumer rebalance tests;
+- bounded Kafka outage and recovery tests; and
+- measured backpressure validation.
 
-- Exact replay can reproduce the captured path using recorded model outputs and recorded tool outputs.
-- Default tests remain offline.
-- Replay failure modes are documented.
+The transport will continue to be described as at least once unless stronger semantics are both designed and proven. Domain idempotency remains distinct from Kafka delivery semantics.
 
-Non-goals:
+## v0.8.0 — Measurement
 
-- Prompt improvement claims.
-- Live model calls.
-- Hosted trace storage.
+Primary goal: establish repeatable evidence about capacity and operational behavior before making performance claims.
 
-## Stage 3: Fork Replay and Execution Diff
+Planned work:
 
-Entry criteria:
+- a reproducible benchmark harness and documented environment controls;
+- ingestion throughput and replay latency measurement;
+- p50, p95, and p99 reporting;
+- CPU and memory observation;
+- large-capsule behavior;
+- bounded soak tests;
+- outage recovery measurement; and
+- explicit capacity assumptions and limitations.
 
-- Exact offline replay works for the controlled capsule.
-- Tool-output freezing is reliable for the scenario.
+No throughput, latency, scale, or reliability target is claimed before this evidence exists.
 
-Exit criteria:
+## Target Architecture
 
-- Offline fork replay can run with recorded tool outputs and fake or recorded model adapters.
-- Diff output identifies relevant path, tool, and final-answer differences.
-- The docs distinguish replay mechanics from real model-quality evidence.
+The near-term target preserves a replay-first local core while making real-agent capture and dependency adapters more general. The optional distributed path remains a transport and assembly boundary, not a replacement for Replay Capsule semantics.
 
-Non-goals:
+Cloud deployment, high availability, multi-tenancy, authentication, distributed trace search, ClickHouse, SaaS billing, and production Kubernetes/Terraform are outside these approved milestones.
 
-- Automatic fixes.
-- Claims that hallucinations are eliminated.
-- Silent live evaluations in CI.
+## Open Questions
 
-## Stage 4: Regression-Test Export
+- What is the smallest generic dependency contract that supports tool-calling agents without hiding side effects?
+- Which LangGraph integration seam can remain stable without claiming universal framework coverage?
+- How should fork replay make probabilistic fresh-model execution visible in results and CI policy?
+- Which execution differences are useful enough to review without coupling the capsule to one framework?
+- What operational evidence is required before expanding the local Kafka topology?
 
-Entry criteria:
-
-- Exact replay and offline fork replay are working for the controlled scenario.
-- Diff output is useful enough to review.
-
-Exit criteria:
-
-- Developer-approved expectations can be exported as offline regression tests.
-- AI-generated assertions remain drafts until approved.
-- Tests make no paid API calls by default.
-
-Non-goals:
-
-- Benchmark suites.
-- Coverage claims.
-- Production reliability claims.
-
-## Stage 5: Agentic-chatbot Integration
-
-Entry criteria:
-
-- Local TraceForge package/API shape is defined.
-- Offline replay and test export have passed on a sanitized fixture.
-
-Exit criteria:
-
-- Agentic-chatbot installs TraceForge locally on a dedicated integration branch.
-- Agentic-chatbot records and exports a sanitized Replay Capsule.
-- End-to-end integration changes remain in Agentic-chatbot.
-- TraceForge contains no hard-coded absolute path to Agentic-chatbot.
-
-Non-goals:
-
-- Copying Agentic-chatbot source into TraceForge.
-- Committing credentials or unsanitized traces.
-- General framework support beyond the approved integration.
-
-## Stage 6: Measured Live Experiments
-
-Entry criteria:
-
-- Offline replay mechanics and regression-test export work.
-- Live experiment approval and configuration are explicit.
-
-Exit criteria:
-
-- Live fork experiments use recorded tool outputs and explicitly configured models.
-- API quota use is visible and opt-in.
-- Prompt-quality claims are backed by measured live evaluation results.
-
-Non-goals:
-
-- Default CI live calls.
-- Fake-model prompt-quality claims.
-- Production monitoring claims.
-
-## Stage 7: Evaluate Service Infrastructure
-
-Entry criteria:
-
-- Local replay workflow has demonstrated value.
-- A real need exists for storage, indexing, sharing, or team workflows.
-
-Exit criteria:
-
-- Infrastructure requirements are written from measured needs.
-- ADRs capture any hard-to-reverse technology choices.
-- Simpler local options have been considered.
-
-Non-goals:
-
-- Treating the approved local kind gate as authorization for cloud/production Kubernetes, ClickHouse, Terraform, distributed storage, or more microservices.
-- SaaS authentication or payments before a product need is demonstrated.
-- Rebranding TraceForge as a generic observability dashboard.
+No `v1.0` milestone is defined.
