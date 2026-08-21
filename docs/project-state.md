@@ -4,13 +4,13 @@ Last verified date: 2026-08-21.
 
 ## Current Phase
 
-The replay feasibility implementation, optional local distributed-ingestion and observability v0.2 path, repository-memory milestone, local Kubernetes v0.3 gate, local Terraform foundation v0.4, and Public Beta v0.4.1 source/CI gates are complete. The GitHub repository is public with `main` and `release/v0.4.1` pushed; the tag and GitHub Release remain.
+The replay feasibility implementation, optional local distributed-ingestion and observability v0.2 path, repository-memory milestone, local Kubernetes v0.3 gate, local Terraform foundation v0.4, and Public Beta v0.4.1 release are complete. The GitHub repository is public; `main` and `release/v0.4.1` are pushed; tag `v0.4.1` and the Experimental Beta GitHub Release are published.
 
 ## Current Milestone
 
-Public Beta `v0.4.1` release preparation for the existing replay-first local product and bounded development-infrastructure paths.
+Public Beta `v0.4.1` is published. No post-release implementation milestone is active.
 
-This release milestone aligns package, CLI, Docker, CI, public documentation, license, contributor framework, artifacts, installation, localhost workbench, Kafka topic configuration, and bounded publication-safety surfaces. It does not redesign replay semantics, implement fork replay, or add production-readiness claims.
+The release aligned package, CLI, Docker, CI, public documentation, license, contributor framework, artifacts, installation, localhost workbench, Kafka topic configuration, and bounded publication-safety surfaces. It did not redesign replay semantics, implement fork replay, or add production-readiness claims.
 
 ## Completed Milestones
 
@@ -30,7 +30,7 @@ This release milestone aligns package, CLI, Docker, CI, public documentation, li
 
 Documentation, both structural schemas, the `traceforge-replay` distribution, controlled local replay artifacts, focused tests, an optional Kafka worker, and a Go ingestion gateway exist.
 
-The documented working branch for public-release preparation is `chore/v0.4.1-release-prep`.
+The documented release state is on `main`; retained branch `release/v0.4.1` and tag `v0.4.1` point to the verified release commit.
 
 The `traceforge-replay` distribution and `traceforge` package/CLI are prepared as software release candidate `0.4.1`; Replay Capsule `0.1.0` and Capture Event `0.2.0` remain independent contracts. The package provides capture with best-effort redaction, sealing, validation, exact replay, deterministic comparison, regression evaluation/export, one optional LangGraph adapter, Kafka assembly commands, and a local dashboard. The optional local distributed path provides HTTP ingestion, Kafka transport, SQLite idempotency/assembly, Prometheus metrics, and opt-in OTLP tracing. Native manifests and kind overlays deploy those same containers locally. Terraform can manage only the local Kubernetes foundation. No fork replay, live replay, production capture integration, hosted service, authentication, cloud/production Kubernetes, or cloud Terraform exists.
 
@@ -72,7 +72,7 @@ Cloud Terraform, remote production state, cloud/production Kubernetes, Helm, ope
 
 ## Exact Next Approved Task
 
-Create the annotated `v0.4.1` tag on the final verified `main` commit, publish the Experimental Beta GitHub Release, complete the external repository/protection check, and stop before `v0.5.0` implementation.
+The next product milestone is `v0.5.0 — Real Agent Capture`: prove one real sanitized LangGraph application against the replay-first path. Implementation requires a separately approved scoped task; no `v0.5.0` implementation is active.
 
 ## Milestone-Boundary Checklist
 
