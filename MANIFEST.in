@@ -1,0 +1,5 @@
+include CHANGELOG.md
+include LICENSE
+include README.md
+recursive-include schemas *.json
+recursive-include examples *.json

@@ -2,12 +2,18 @@ FROM python:3.12-slim AS builder
 
 WORKDIR /build
 COPY pyproject.toml ./
+COPY examples ./examples
 COPY schemas ./schemas
 COPY src ./src
 RUN python -m pip wheel --wheel-dir /wheels ".[dashboard,kafka]"
 
 FROM python:3.12-slim AS runtime
 
+ARG TRACEFORGE_VERSION=0.4.1
+LABEL org.opencontainers.image.title="TraceForge" \
+      org.opencontainers.image.description="Deterministic offline replay for failed Python agent runs" \
+      org.opencontainers.image.version="$TRACEFORGE_VERSION" \
+      org.opencontainers.image.licenses="Apache-2.0"
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 RUN useradd --create-home --uid 10001 traceforge
 WORKDIR /app

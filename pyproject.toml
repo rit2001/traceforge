@@ -4,9 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "traceforge-replay"
-version = "0.1.0"
-description = "Local Replay Capsule validation and sealing feasibility MVP"
+dynamic = ["version"]
+description = "Deterministic offline replay and regression export for failed Python agent runs"
+readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.10"
+keywords = ["agents", "deterministic-replay", "langgraph", "testing"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Testing",
+]
 dependencies = [
   "jsonschema[format]>=4.23,<5",
   "rfc8785>=0.1.2,<1",
@@ -40,10 +51,25 @@ traceforge = "traceforge.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.dynamic]
+version = {attr = "traceforge.__version__"}
+
 [tool.setuptools.data-files]
 "share/traceforge/schemas" = [
   "schemas/capture-event-v0.schema.json",
   "schemas/replay-capsule-v0.schema.json",
+]
+"share/traceforge/examples/weather" = [
+  "examples/weather/replay-capsule.json",
+  "examples/weather/regression-spec.json",
+]
+"share/traceforge/examples/rag-citation" = [
+  "examples/rag-citation/replay-capsule.json",
+  "examples/rag-citation/regression-spec.json",
+]
+"share/traceforge/examples/tool-argument-safety" = [
+  "examples/tool-argument-safety/replay-capsule.json",
+  "examples/tool-argument-safety/regression-spec.json",
 ]
 
 [tool.setuptools.package-data]
