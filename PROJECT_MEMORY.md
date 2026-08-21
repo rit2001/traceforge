@@ -97,14 +97,14 @@ ADRs are historical records. Supersede them with a new ADR; do not silently rewr
 ## Current Branch, Milestone, and Limitations
 
 - Documented branch: `chore/v0.4.1-release-prep` during release preparation; the release target is `main` plus `release/v0.4.1`.
-- Current milestone: Public Beta `v0.4.1` preparation and publication without changing Replay Capsule `0.1.0`, Capture Event `0.2.0`, exact-replay semantics, or infrastructure ownership.
+- Current milestone: the local Public Beta `v0.4.1` release gate is complete without changing Replay Capsule `0.1.0`, Capture Event `0.2.0`, exact-replay semantics, or infrastructure ownership; GitHub publication remains.
 - Known limitations: no fork/live replay; no production client integration; redaction is best effort; the replay network guard is process-wide; transport is at least once; local SQLite is single writer and not a distributed store; Kafka is ephemeral in kind; the RWO PVC is deleted with the cluster; local Terraform state is ignored and has no remote encryption/locking/backup; concurrent host inspection of a live worker WAL is unsupported; kind, Terraform, and the Collector topology are local development only.
 
 Live branch, milestone, blockers, and assumptions belong in [docs/project-state.md](docs/project-state.md), not in this summary.
 
 ## Exact Next Approved Milestone
 
-Complete the `v0.4.1` release verification, publication-safety gate, reviewable commits, `main` merge, release branch, tag, and GitHub Release. Stop before `v0.5.0` implementation.
+Publish the verified `v0.4.1` history to the existing GitHub repository, complete its community metadata, create the release branch and tag, publish the GitHub Release, and stop before `v0.5.0` implementation.
 
 ## Required Reading Order
 

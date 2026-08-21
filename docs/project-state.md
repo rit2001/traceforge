@@ -1,10 +1,10 @@
 # Project State
 
-Last verified date: 2026-07-22.
+Last verified date: 2026-08-21.
 
 ## Current Phase
 
-The replay feasibility implementation, optional local distributed-ingestion and observability v0.2 path, repository-memory milestone, local Kubernetes v0.3 gate, local Terraform foundation v0.4, and public release-candidate hardening v0.4.1 are complete.
+The replay feasibility implementation, optional local distributed-ingestion and observability v0.2 path, repository-memory milestone, local Kubernetes v0.3 gate, local Terraform foundation v0.4, and local Public Beta v0.4.1 release gate are complete. GitHub publication is the remaining release operation.
 
 ## Current Milestone
 
@@ -72,7 +72,7 @@ Cloud Terraform, remote production state, cloud/production Kubernetes, Helm, ope
 
 ## Exact Next Approved Task
 
-Complete the `v0.4.1` release verification and publication gate, merge the reviewable release history to `main`, publish the tag and GitHub Release, and stop before `v0.5.0` implementation.
+Publish the verified `v0.4.1` history to the existing GitHub repository, configure the public repository/community metadata, create the release branch and tag, publish the GitHub Release, and stop before `v0.5.0` implementation.
 
 ## Milestone-Boundary Checklist
 
