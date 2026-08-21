@@ -1,0 +1,81 @@
+name: Bug report
+description: Report reproducible incorrect behavior using synthetic, sanitized data.
+title: "bug: "
+labels:
+  - "type: bug"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        TraceForge is an Experimental Beta. Never attach credentials, `.env` contents, private traces, customer data, or unsanitized logs.
+  - type: input
+    id: version
+    attributes:
+      label: TraceForge version
+      description: Release, commit SHA, or editable-install revision.
+      placeholder: v0.4.1
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - capture
+        - replay
+        - regression
+        - Kafka / event assembly
+        - OpenTelemetry / metrics
+        - storage
+        - web workbench
+        - CLI
+        - Docker / Kubernetes / Terraform
+        - documentation / packaging
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python/Go version, install method, and relevant local infrastructure versions.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Use the smallest synthetic reproduction and exact commands.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: textarea
+    id: capsule
+    attributes:
+      label: Capsule / replay information
+      description: Schema version, replay mode, runner, and validation result. Share an artifact only if it is synthetic and reviewed.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      description: Remove secrets, private data, tokens, authorization headers, and local sensitive paths before pasting output.
+      render: shell
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Data safety
+      options:
+        - label: I reviewed this report and its attachments for credentials, private data, and unsanitized traces.
+          required: true
+        - label: This is not a security vulnerability report; security issues will be reported privately under SECURITY.md.
+          required: true

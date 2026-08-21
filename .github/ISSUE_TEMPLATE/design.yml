@@ -1,0 +1,74 @@
+name: Design discussion
+description: Discuss an architectural boundary before implementation.
+title: "design: "
+labels:
+  - "type: design"
+  - "design discussion"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for replay semantics, schemas, framework boundaries, storage, delivery guarantees, or infrastructure ownership. A proposal is not an accepted decision until the documented review/ADR process is complete.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Design problem
+      description: State the decision to be made and the current behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: Include product boundaries, offline behavior, immutability, security, cost, and compatibility constraints.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed architecture
+      description: Describe components, data flow, ownership, invariants, and interfaces.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include the status quo and why each alternative is accepted or rejected.
+    validations:
+      required: true
+  - type: textarea
+    id: failures
+    attributes:
+      label: Failure modes
+      description: Cover partial failure, retries, duplication, ordering, recovery, and fail-closed behavior where applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: replay
+    attributes:
+      label: Replay implications
+      description: Explain effects on evidence immutability, exact/fork semantics, dependency matching, and regression evaluation.
+    validations:
+      required: true
+  - type: textarea
+    id: observability
+    attributes:
+      label: Observability implications
+      description: Explain trace correlation, metrics, logs, and diagnostic requirements without inventing SLOs.
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility implications
+      description: Cover schema evolution, existing capsules/events, configuration, and rollback.
+    validations:
+      required: true
+  - type: textarea
+    id: questions
+    attributes:
+      label: Open questions
+      description: List unresolved decisions and evidence needed before acceptance.
+    validations:
+      required: true

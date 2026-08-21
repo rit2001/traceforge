@@ -1,0 +1,62 @@
+name: Feature request
+description: Propose behavior that fits TraceForge's replay-first scope.
+title: "feat: "
+labels:
+  - "type: feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem before the solution. Cross-cutting or hard-to-reverse changes should use the design template.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What concrete developer or replay problem is unresolved today?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Proposed behavior
+      description: Describe observable behavior and an example workflow.
+    validations:
+      required: true
+  - type: textarea
+    id: fit
+    attributes:
+      label: Why this belongs in TraceForge
+      description: Connect it to capture, sealing, replay, comparison, regression, or the bounded local pipeline.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: true
+  - type: checkboxes
+    id: areas
+    attributes:
+      label: Affected areas
+      options:
+        - label: Capture / sanitization
+        - label: Replay / comparison
+        - label: Regression / pytest export
+        - label: Kafka / assembly / storage
+        - label: OpenTelemetry / metrics
+        - label: Web / CLI
+        - label: Infrastructure / operations
+        - label: Contracts / documentation
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Backwards-compatibility considerations
+      description: Include schema, capsule readability, runner, event, configuration, and operational compatibility.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Acceptance evidence
+      description: What offline test or controlled example would demonstrate completion without overstating production readiness?
