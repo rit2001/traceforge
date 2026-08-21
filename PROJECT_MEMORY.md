@@ -17,7 +17,7 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
 - Optional local Prometheus metrics and OpenTelemetry capture traces with later linked replay traces.
 - Native Kustomize manifests and repeatable automation for the existing distributed stack on one verified local ARM64 kind cluster, including bounded pod-recovery and PVC-persistence checks.
 - A pinned-provider local Terraform foundation for that kind deployment, with native mock tests and a verified plan/apply/state/zero-drift/controlled-drift/reconciliation/destroy lifecycle.
-- Public release candidate `0.4.1` metadata, artifacts, clean-wheel CLI/example verification, localhost dashboard packaging, named CI gates, and a bounded redacted Git-history audit.
+- Published Public Beta `0.4.1` metadata, artifacts, clean-wheel CLI/example verification, localhost dashboard packaging, named CI gates, and bounded redacted Git-history audits.
 
 Only the executed evidence in [docs/verification-ledger.md](docs/verification-ledger.md) may be cited as verification.
 
@@ -96,15 +96,15 @@ ADRs are historical records. Supersede them with a new ADR; do not silently rewr
 
 ## Current Branch, Milestone, and Limitations
 
-- Documented branch: `chore/v0.4.1-release-prep` during release preparation; the release target is `main` plus `release/v0.4.1`.
-- Current milestone: the Public Beta `v0.4.1` source and GitHub CI gates are complete without changing Replay Capsule `0.1.0`, Capture Event `0.2.0`, exact-replay semantics, or infrastructure ownership; the final tag and GitHub Release remain.
+- Documented branch: `main`; retained branch `release/v0.4.1` and tag `v0.4.1` identify the verified release commit.
+- Current milestone: Public Beta `v0.4.1` is published without changing Replay Capsule `0.1.0`, Capture Event `0.2.0`, exact-replay semantics, or infrastructure ownership.
 - Known limitations: no fork/live replay; no production client integration; redaction is best effort; the replay network guard is process-wide; transport is at least once; local SQLite is single writer and not a distributed store; Kafka is ephemeral in kind; the RWO PVC is deleted with the cluster; local Terraform state is ignored and has no remote encryption/locking/backup; concurrent host inspection of a live worker WAL is unsupported; kind, Terraform, and the Collector topology are local development only.
 
 Live branch, milestone, blockers, and assumptions belong in [docs/project-state.md](docs/project-state.md), not in this summary.
 
 ## Exact Next Approved Milestone
 
-Create the annotated `v0.4.1` tag on the final verified `main` commit, publish the Experimental Beta GitHub Release, complete the external repository/protection check, and stop before `v0.5.0` implementation.
+The next product milestone is `v0.5.0 — Real Agent Capture`: prove one real sanitized LangGraph application against the replay-first path. Implementation requires a separately approved scoped task.
 
 ## Required Reading Order
 

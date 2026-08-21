@@ -4,7 +4,9 @@ All notable changes to TraceForge are documented here. This project follows [Kee
 
 ## [Unreleased]
 
-No unreleased changes are recorded yet.
+### Changed
+
+- Synchronized durable project state after the `v0.4.1` GitHub publication and protection gate.
 
 ## [0.4.1] - 2026-08-21
 
