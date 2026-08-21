@@ -4,13 +4,13 @@ Last verified date: 2026-07-22.
 
 ## Current Phase
 
-The replay feasibility implementation, optional local distributed-ingestion and observability v0.2 path, repository-memory milestone, local Kubernetes v0.3 gate, and local Terraform foundation v0.4 are complete.
+The replay feasibility implementation, optional local distributed-ingestion and observability v0.2 path, repository-memory milestone, local Kubernetes v0.3 gate, local Terraform foundation v0.4, and public release-candidate hardening v0.4.1 are complete.
 
 ## Current Milestone
 
-Terraform-managed foundation for the existing dedicated local kind deployment, with Kustomize retaining workload delivery.
+Public Beta `v0.4.1` release preparation for the existing replay-first local product and bounded development-infrastructure paths.
 
-This foundation milestone was completed on 2026-07-22 with a real Linux ARM64 kind plan/apply/state/drift/reconciliation/destroy lifecycle and the existing application smoke. It adds no alternative application implementation, cloud infrastructure, or production-readiness claim.
+This release milestone aligns package, CLI, Docker, CI, public documentation, license, contributor framework, artifacts, installation, localhost workbench, Kafka topic configuration, and bounded publication-safety surfaces. It does not redesign replay semantics, implement fork replay, or add production-readiness claims.
 
 ## Completed Milestones
 
@@ -24,14 +24,15 @@ This foundation milestone was completed on 2026-07-22 with a real Linux ARM64 ki
 - Repository memory and contributor navigation: root memory, five-minute start page, component map, verification ledger, Git policy, documentation ownership, and local runbooks completed on 2026-07-21. See the verification ledger for checks executed during completion.
 - Local Kubernetes v0.3: the existing Go gateway, Apache Kafka development broker, Python worker, API/dashboard, and OpenTelemetry Collector became Ready on a dedicated kind cluster. A real capture sealed and validated, exact offline replay/regression passed, duplicate delivery remained idempotent, malformed input was rejected before enqueue, cross-service capture spans and the replay link passed, an API pod was recreated, worker replacement preserved the unchanged capsule on the RWO PVC, and application UID/GID checks returned 10001. The cluster was deleted after evidence capture. See the verification ledger for exact commands and limitations.
 - Terraform foundation v0.4: the official pinned Kubernetes provider created and tracked the `traceforge` Namespace, ResourceQuota, LimitRange, and five token-less dedicated ServiceAccounts. The Terraform-backed overlay delivered the unchanged workloads; the full v0.3 smoke passed. Zero drift, controlled label drift (detailed exit 2), reconciliation, a following zero-drift plan, ordered application deletion, eight-resource destroy, empty state, namespace removal, and dedicated-cluster removal were observed. See ADR-0006 and the verification ledger.
+- Public release candidate v0.4.1: distribution/package/CLI/Docker metadata, release artifacts, public landing documentation, named offline CI jobs, clean-wheel installation, generated regression execution, localhost-only dashboard verification, and a bounded redacted all-branch Git-history audit were completed without changing schema versions or infrastructure ownership. See the release notes and verification ledger.
 
 ## Repository Status
 
 Documentation, both structural schemas, the `traceforge-replay` distribution, controlled local replay artifacts, focused tests, an optional Kafka worker, and a Go ingestion gateway exist.
 
-The documented working branch for the Terraform foundation milestone is `feat/terraform-foundation-v0.4`.
+The documented working branch for public-release preparation is `chore/v0.4.1-release-prep`.
 
-The package provides capture with best-effort redaction, sealing, validation, exact replay, deterministic comparison, regression evaluation/export, one optional LangGraph adapter, Kafka assembly commands, and a local dashboard. The optional local distributed path provides HTTP ingestion, Kafka transport, SQLite idempotency/assembly, Prometheus metrics, and opt-in OTLP tracing. Native manifests and kind overlays deploy those same containers locally. Terraform can manage only the local Kubernetes foundation. No fork replay, live replay, production capture integration, hosted service, authentication, cloud/production Kubernetes, or cloud Terraform exists.
+The `traceforge-replay` distribution and `traceforge` package/CLI are prepared as software release candidate `0.4.1`; Replay Capsule `0.1.0` and Capture Event `0.2.0` remain independent contracts. The package provides capture with best-effort redaction, sealing, validation, exact replay, deterministic comparison, regression evaluation/export, one optional LangGraph adapter, Kafka assembly commands, and a local dashboard. The optional local distributed path provides HTTP ingestion, Kafka transport, SQLite idempotency/assembly, Prometheus metrics, and opt-in OTLP tracing. Native manifests and kind overlays deploy those same containers locally. Terraform can manage only the local Kubernetes foundation. No fork replay, live replay, production capture integration, hosted service, authentication, cloud/production Kubernetes, or cloud Terraform exists.
 
 ## Confirmed Decisions
 
@@ -39,8 +40,8 @@ The package provides capture with best-effort redaction, sealing, validation, ex
 - First support is Python, LangGraph, and tool-calling agents.
 - Initial execution is local-only.
 - Exact replay freezes recorded model outputs and recorded tool outputs.
-- Offline fork replay uses recorded tool outputs with fake or recorded model adapters.
-- Live fork experiments are opt-in, may consume API quota, and never run in default CI silently.
+- Planned offline fork replay will use recorded tool outputs with fake or recorded model adapters; it is not implemented in `v0.4.1`.
+- Planned live fork experiments will be opt-in, may consume API quota, and never run in default CI silently.
 - AI-generated assertions require developer approval before becoming regression tests.
 - TraceForge and Agentic-chatbot remain separate repositories.
 - Agentic-chatbot integration eventually happens by installing a local TraceForge Python package/API on a dedicated integration branch.
@@ -58,10 +59,10 @@ The package provides capture with best-effort redaction, sealing, validation, ex
 
 ## Known Blockers and Open Questions
 
-- Capture boundary inside Agentic-chatbot is not defined.
-- Sanitization review rules for capsule fixtures are not defined.
-- The exact offline fake or recorded model adapter shape is not defined.
-- The package/API surface for future Agentic-chatbot integration is not defined.
+- A stable generic real-agent capture boundary is not defined.
+- A generic tool dependency contract is not defined.
+- Fork replay and richer graph/message/tool diff semantics are not defined in executable code.
+- Sanitization remains best effort and still requires human review before fixtures are shared.
 - Concurrent host-side inspection of the worker's bind-mounted SQLite WAL is unsupported on Docker Desktop; use a service-owned reader or inspect after shutdown.
 - The kind worker remains one replica and SQLite remains single writer; the local RWO PVC and ephemeral Kafka do not provide high availability or disaster recovery.
 
@@ -71,7 +72,7 @@ Cloud Terraform, remote production state, cloud/production Kubernetes, Helm, ope
 
 ## Exact Next Approved Task
 
-Review the verified local Terraform foundation and ownership boundary before approving a cloud environment, remote backend, production Kubernetes, production storage, or another infrastructure expansion.
+Complete the `v0.4.1` release verification and publication gate, merge the reviewable release history to `main`, publish the tag and GitHub Release, and stop before `v0.5.0` implementation.
 
 ## Milestone-Boundary Checklist
 

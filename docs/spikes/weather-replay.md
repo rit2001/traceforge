@@ -1,5 +1,7 @@
 # Weather Replay Feasibility Spike
 
+> **Historical design note:** the controlled exact-replay and regression-export portions were implemented. The fork-replay session and its richer diff criteria remain planned in `v0.4.1`.
+
 ## Goal
 
 Prove that TraceForge can capture and replay a controlled local LangGraph weather-agent failure using the existing Agentic-chatbot repository as the system under test, without copying application code, exposing secrets, or making live API calls in default tests.
@@ -27,7 +29,7 @@ The existing LangGraph/OpenWeather agent is the system under test. TraceForge sh
 - Verify that exact replay does not call live APIs.
 - Confirm that the replayed path matches the captured failed path.
 
-### Session 4: Fork Replay and Diff
+### Planned Session 4: Fork Replay and Diff
 
 - Freeze OpenWeather tool outputs.
 - Allow the prompt or graph path to run again under controlled offline execution with a fake or recorded model adapter.
@@ -76,7 +78,7 @@ For example, a fixed answer should not invent weather conditions, temperatures, 
 - Unit tests must use fake or recorded model adapters and recorded tool responses.
 - Tests must make approval status explicit for generated assertions.
 
-Live fork experiments may use a real explicitly configured model with recorded tool outputs, may consume API quota, and must never run silently in default CI.
+Future live fork experiments may use a real explicitly configured model with recorded tool outputs, may consume API quota, and must never run silently in default CI.
 
 ## Go/No-Go Criteria
 
@@ -84,8 +86,8 @@ Go if:
 
 - A representative weather-agent failure can be captured into a capsule.
 - Exact replay reproduces the captured path offline.
-- Offline fork replay can reuse frozen OpenWeather output while validating replay-engine mechanics with a fake or recorded model adapter.
-- Diff output helps identify the behavioural difference.
+- Planned: offline fork replay can reuse frozen OpenWeather output while validating replay-engine mechanics with a fake or recorded model adapter.
+- Planned: richer diff output helps identify the behavioural difference.
 - A developer-approved expectation can be exported as an offline regression test.
 - Any prompt-quality claim is backed by measured live evaluation results, not fake-model tests alone.
 

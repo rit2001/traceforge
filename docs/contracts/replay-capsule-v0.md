@@ -54,11 +54,11 @@ Timestamps and durations are diagnostic metadata. Replay and comparison must not
 
 ## Validation Responsibilities
 
-| JSON Schema structural validation | Semantic validation performed by future TraceForge code |
+| JSON Schema structural validation | Semantic validation performed by TraceForge code |
 | --- | --- |
 | Required sections and fields are present. | Dependency identifiers, event identifiers, and sequences satisfy required uniqueness and ordering rules. |
 | TraceForge-owned objects reject unknown properties. | A request fingerprint equals SHA-256 of the RFC 8785 canonicalized sanitized request. |
-| Identifiers, integer ranges, enums, and digest string shapes are valid; timestamps carry the Draft 2020-12 `date-time` format annotation. | The future validator enables and checks `date-time` format validation; the capsule digest equals SHA-256 of the required canonicalized capsule scope. |
+| Identifiers, integer ranges, enums, and digest string shapes are valid; timestamps carry the Draft 2020-12 `date-time` format annotation. | The validator enables and checks `date-time` format validation; the capsule digest equals SHA-256 of the required canonicalized capsule scope. |
 | A dependency outcome has exactly one valid returned-or-errored shape. | Redaction occurred before persistence and no secrets, credentials, forbidden headers, or unsafe data remain. |
 | Model and HTTP records have their required normalized structure, and normalized HTTP response headers are limited to `content-type`. | Replay matches both sequence and sanitized request identity, fails closed on mismatches, and performs zero live-network fallback. |
 | A persisted capsule declares a passed scan and the required integrity algorithm, canonicalization, and scope. | Diagnostic timestamps and durations are excluded from exact-equality assertions, and behavioural expectations are evaluated separately from technical completion. |

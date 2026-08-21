@@ -1,24 +1,21 @@
 # Architecture
 
-## Feasibility-Spike Architecture
+## Current Implementation
 
 The original spike architecture was local, narrow, and file-based. The v0.2 work preserves that replay core while adding an optional local asynchronous ingestion path. The v0.3 deployment gate schedules the same path on a local kind Kubernetes cluster without changing replay semantics. Terraform v0.4 adds local state and lifecycle management for a deliberately small Kubernetes foundation around that unchanged workload topology.
 
-Core components:
+Current component status:
 
-- Capture: records a failed local LangGraph or tool-calling execution.
-- Replay Capsule: stores captured inputs, graph metadata, model outputs, tool calls, tool outputs, execution path, and comparison metadata.
-- Exact replay: replays the execution with frozen model and tool outputs.
-- Offline fork replay: reuses frozen tool outputs while allowing prompt or graph mechanics to run against fake or recorded model adapters.
-- Live fork experiment: reuses frozen tool outputs while running a real explicitly configured model.
-- Diff: compares execution paths, node transitions, model-visible facts, and outputs.
-- Test export: turns developer-approved expectations into offline regression tests.
+- **Implemented:** explicit controlled capture with best-effort redaction; Replay Capsule sealing and validation; exact replay with recorded model and HTTP outcomes; deterministic observation comparison; separate regression evaluation; pytest export; CLI; local workbench and SQLite replay history.
+- **Implemented in the optional local distributed path:** Go ingestion, bounded enqueueing, Kafka transport, Python validation/assembly, SQLite event-ID deduplication and ordering, DLQ commit safety, sealed capsule output, W3C propagation, optional spans, and Prometheus metrics.
+- **Partial:** Python/LangGraph capture and dependency coverage. The repository has one bounded LangGraph adapter and recorded model/HTTP adapters, not arbitrary framework or generic tool capture.
+- **Planned:** fork replay, fresh-model replay, richer graph/message/tool diff views, generic tool dependency contracts, hosted trace search, and production infrastructure.
 
 The original spike avoided services and message queues. The optional v0.2 Go/Kafka path exists specifically to keep capture publishing off the primary application's synchronous request path; it is still a local development topology, not a production deployment claim.
 
-## Future Target Architecture
+## Target Architecture
 
-If the replay spike passes, the target architecture may expand around the same replay-first core:
+The next approved milestones may expand around the same replay-first core:
 
 - Capture adapters for additional Python agent frameworks.
 - A stable Replay Capsule schema with migration support.
@@ -30,11 +27,11 @@ If the replay spike passes, the target architecture may expand around the same r
 
 The target architecture still remains distinct from a generic observability product. Replay, comparison, and regression-test export remain the product center.
 
-## Capture
+## Partial: Capture
 
-Capture should collect enough data to replay and compare a failed execution without requiring live external dependencies. For the first milestone, capture can be explicit and framework-specific rather than magical or universal.
+Capture collects enough controlled data to seal and replay the tested examples without requiring live external dependencies. The current `CaptureSession` is explicit and framework-specific rather than magical or universal; a generic arbitrary-agent capture path is not implemented.
 
-Captured data should include:
+The implemented capsule/capture path can represent:
 
 - Initial user input and run configuration.
 - Graph or agent node metadata.
@@ -81,19 +78,19 @@ The replay CLI loads `MODULE:FUNCTION` runners as trusted local Python code. Imp
 
 Exact replay temporarily patches common Python socket entry points to fail live-network attempts. This guard is process-wide while active and is not safe for unrelated concurrent network work in other threads. It is a feasibility safeguard, not an operating-system sandbox.
 
-## Fork Replay
+## Planned: Fork Replay
 
-Fork replay freezes tool outputs while allowing model or prompt behaviour to run again. This isolates whether a prompt, graph, or model change would behave differently against the same external facts.
+Fork replay is not implemented in `v0.4.1`. The intended mode freezes tool outputs while allowing model or prompt behaviour to run again. This would isolate whether a prompt, graph, or model change behaves differently against the same external facts.
 
-Offline fork replay uses fake or recorded model adapters and recorded tool responses. It can validate replay-engine mechanics such as state reconstruction, graph path handling, tool-output injection, and diff generation.
+The planned offline mode would use fake or recorded model adapters and recorded tool responses. It could validate replay-engine mechanics such as state reconstruction, graph path handling, tool-output injection, and diff generation.
 
-A live fork experiment uses a real explicitly configured model with recorded tool outputs. It is opt-in, may consume API quota, and must never run silently in default CI.
+A planned live fork experiment would use a real explicitly configured model with recorded tool outputs. It must be opt-in, may consume API quota, and must never run silently in default CI.
 
 Live fork replay can be probabilistic because model generation may vary. Comparisons must account for that limitation and avoid overstating determinism.
 
-## Diff
+## Partial: Diff
 
-Diff should compare behaviour at levels useful to a developer:
+The current implementation deterministically compares captured and replay observations and exposes regression results. Richer diffing is planned at levels useful to a developer:
 
 - Node path and graph branches.
 - Tool choice and tool arguments.
@@ -193,3 +190,11 @@ Immutable captured evidence belongs to the capsule/domain layer. Validation, sea
 The CLI and FastAPI dashboard are application interfaces over the same domain functions. Authentication belongs in API middleware. SQLite implements replay-history summaries plus local Kafka idempotency, assembly, and trace-correlation state without storing telemetry in or modifying capsule evidence; future databases belong behind storage interfaces. Kafka implements the optional `EventPublisher` transport boundary. Framework support belongs in optional adapters/plugins. Kubernetes and the bounded Terraform foundation remain deployment concerns and cannot change replay semantics.
 
 See the responsibility-level [codebase map](codebase-map.md), operational [Kafka runbook](operations/kafka.md), and [observability runbook](operations/observability.md).
+
+## Open Questions
+
+- What is the smallest generic tool dependency contract that preserves fail-closed request identity and side-effect safety?
+- Which framework capture seam can support one real LangGraph application without implying arbitrary-agent compatibility?
+- How should a future fork replay identify probabilistic fresh-model execution in results and regression policy?
+- Which graph, message, and tool differences are portable enough to remain outside framework-specific capsule fields?
+- What pipeline reliability evidence is required before expanding the local single-broker, single-worker topology?

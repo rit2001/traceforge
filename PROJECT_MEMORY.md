@@ -17,6 +17,7 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
 - Optional local Prometheus metrics and OpenTelemetry capture traces with later linked replay traces.
 - Native Kustomize manifests and repeatable automation for the existing distributed stack on one verified local ARM64 kind cluster, including bounded pod-recovery and PVC-persistence checks.
 - A pinned-provider local Terraform foundation for that kind deployment, with native mock tests and a verified plan/apply/state/zero-drift/controlled-drift/reconciliation/destroy lifecycle.
+- Public release candidate `0.4.1` metadata, artifacts, clean-wheel CLI/example verification, localhost dashboard packaging, named CI gates, and a bounded redacted Git-history audit.
 
 Only the executed evidence in [docs/verification-ledger.md](docs/verification-ledger.md) may be cited as verification.
 
@@ -95,15 +96,15 @@ ADRs are historical records. Supersede them with a new ADR; do not silently rewr
 
 ## Current Branch, Milestone, and Limitations
 
-- Documented branch: `feat/terraform-foundation-v0.4`.
-- Current milestone: local Terraform foundation v0.4, completed on 2026-07-22 after its eight resources and the unchanged five-workload stack passed the dedicated ARM64 kind lifecycle.
+- Documented branch: `chore/v0.4.1-release-prep` during release preparation; the release target is `main` plus `release/v0.4.1`.
+- Current milestone: Public Beta `v0.4.1` preparation and publication without changing Replay Capsule `0.1.0`, Capture Event `0.2.0`, exact-replay semantics, or infrastructure ownership.
 - Known limitations: no fork/live replay; no production client integration; redaction is best effort; the replay network guard is process-wide; transport is at least once; local SQLite is single writer and not a distributed store; Kafka is ephemeral in kind; the RWO PVC is deleted with the cluster; local Terraform state is ignored and has no remote encryption/locking/backup; concurrent host inspection of a live worker WAL is unsupported; kind, Terraform, and the Collector topology are local development only.
 
 Live branch, milestone, blockers, and assumptions belong in [docs/project-state.md](docs/project-state.md), not in this summary.
 
 ## Exact Next Approved Milestone
 
-Review the verified local Terraform/Kustomize ownership gate before approving a cloud environment, remote backend, production Kubernetes, production storage, or another infrastructure expansion. No further infrastructure expansion is approved by the v0.4 milestone.
+Complete the `v0.4.1` release verification, publication-safety gate, reviewable commits, `main` merge, release branch, tag, and GitHub Release. Stop before `v0.5.0` implementation.
 
 ## Required Reading Order
 

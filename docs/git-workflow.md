@@ -1,6 +1,6 @@
 # Git Workflow
 
-This workflow keeps experimental evidence and implementation changes reviewable. The currently documented branch is `feat/terraform-foundation-v0.4`.
+This workflow keeps experimental evidence and implementation changes reviewable. The current release-preparation branch is `chore/v0.4.1-release-prep`; the release target is `main` with a retained `release/v0.4.1` branch.
 
 ## Branches
 
@@ -37,4 +37,4 @@ CI passing proves only the tested repository scope. It does not authorize or sub
 
 ## Current Branch
 
-`feat/terraform-foundation-v0.4` contains the approved local Terraform foundation around the existing kind/Kustomize deployment. It is not evidence that the branch has merged to `main`, shipped as a release, deployed to a cloud, verified AWS/EKS, or completed production hardening.
+`chore/v0.4.1-release-prep` contains public-beta release work over the verified replay and local extension milestones. Until the publication gate completes, it is not evidence that the branch has merged to `main`, been tagged, or been published. A successful local release remains no evidence of cloud deployment, AWS/EKS verification, or production hardening.

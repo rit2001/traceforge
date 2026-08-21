@@ -6,6 +6,12 @@ AI-agent failures are difficult to debug because they depend on a changing mix o
 
 TraceForge focuses on one narrow problem: preserve a failed agent execution well enough that a developer can replay it, fork it under controlled conditions, compare the paths, and turn approved expected behaviour into an offline regression test. The product vision includes production failures later, but the initial feasibility spike uses a controlled local failure unless a genuine production failure is explicitly supplied.
 
+## Implementation Status
+
+- **Implemented:** controlled capture, sanitization, sealing, structural/semantic/integrity validation, exact offline replay, deterministic observation comparison, separate developer-approved regression specifications, and pytest export.
+- **Partial:** capture and framework/dependency integration are bounded to tested Python, LangGraph, model, and HTTP paths.
+- **Planned:** generic tool capture, real-agent integration, richer execution diffing, fork replay, and opt-in fresh-model replay.
+
 ## Target Developer
 
 The initial target developer builds Python LangGraph or tool-calling agents locally and needs to debug a concrete failed run. They are comfortable reading traces, prompts, tool payloads, and test output. They want reproducible regression coverage before changing prompts, graph nodes, or tool adapters.
@@ -38,36 +44,40 @@ A Replay Capsule is a local artifact that freezes the information needed to repl
 - Execution path and node transitions.
 - Timestamps or ordering metadata where needed for comparison.
 - Redaction metadata for sensitive fields.
-- Developer-approved expectations when a test is exported.
+
+Developer-approved expectations are deliberately stored in a separate regression specification. They are not capsule evidence and do not change capsule integrity.
 
 The capsule is not a general data lake, hosted trace store, or production telemetry backend.
 
 Capsules must never contain API keys, secrets, authorization headers, or unredacted sensitive data.
 
-## User Workflow
+## Implemented User Workflow
 
 1. A developer observes a failed local agent run.
 2. TraceForge captures the run into a Replay Capsule.
 3. The developer runs exact replay to confirm the captured failure path can be reproduced offline.
-4. The developer runs an offline fork replay after changing a prompt, graph edge, model setting, or other local behaviour while keeping tool outputs fixed and using a fake or recorded model adapter.
-5. TraceForge compares the original and replayed paths.
-6. The developer reviews suggested expectations or writes their own.
-7. Approved expectations are exported as an offline regression test.
-8. Future changes are checked against that regression test without calling live APIs.
-9. Separately, the developer may opt into a live fork experiment with a real explicitly configured model and recorded tool outputs. This may consume API quota and must not run silently in default CI.
+4. TraceForge compares the original and replayed observations.
+5. The developer writes and reviews separate regression expectations.
+6. Approved expectations are exported as an offline regression test.
+7. Future changes are checked against that regression test without calling live APIs.
+
+## Planned Fork Workflow
+
+A future fork replay will keep recorded tool/dependency outcomes fixed while allowing model, prompt, graph, or agent behavior to run again. Any fresh-model execution will be explicit and opt-in, may consume API quota, and must never run silently in default CI. Fork replay is not implemented in `v0.4.1`.
 
 ## Product Guarantees
 
-TraceForge should guarantee, once implemented and tested, that:
+The implemented exact-replay path guarantees for tested adapters that:
 
 - Exact replay does not call live model or tool APIs.
 - Exact replay uses captured model and tool outputs.
-- Fork replay uses captured tool outputs.
 - Unit and CI test suites remain fully offline by default.
 - Unit tests use fake or recorded model adapters and recorded tool responses.
 - Exported tests can run offline.
 - AI-generated assertions are not accepted without developer approval.
 - Sensitive values are not intentionally copied from external application repositories.
+
+A future fork-replay implementation must use captured tool/dependency outcomes and state its probabilistic boundaries explicitly.
 
 ## Product Non-Guarantees
 
@@ -82,15 +92,15 @@ TraceForge does not guarantee:
 - Hosted storage, authentication, billing, or collaboration features.
 - Accurate behaviour if the original capture omitted required data.
 
-## Initial Adoption and Success Criteria
+## Initial Success Criteria
 
-Initial adoption should be measured through the feasibility spike, not broad claims. The first success criteria are:
+The initial controlled spike established these implemented mechanics:
 
 - A controlled local LangGraph weather-agent failure can be represented as a sanitised Replay Capsule without copying application code or secrets.
 - Exact replay reproduces the captured execution path offline.
-- Fork replay reuses frozen tool outputs while allowing model or prompt behaviour to change.
-- The comparison identifies meaningful path or output differences.
+- Deterministic comparison identifies supported observation and output differences.
 - A developer-approved expectation can be exported as an offline regression test.
-- The approach is small enough to justify implementation before adding infrastructure.
+
+Fork replay with frozen tool outputs and richer execution diffing remain planned success criteria rather than completed evidence.
 
 Prompt-quality claims require measured live evaluation results. A fake model can validate replay-engine mechanics, but it cannot prove that a prompt change improves real model behaviour.

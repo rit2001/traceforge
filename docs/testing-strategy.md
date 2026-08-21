@@ -25,23 +25,27 @@ Does not prove:
 
 Current coverage includes capsule sealing/validation, exact replay failure modes, capture/redaction, regression/export, dashboard, capture-event schemas, Kafka publisher/assembly/DLQ semantics, OpenTelemetry correlation, metric-label bounds, and the Go gateway's validation, HTTP, publisher, telemetry, and outage/recovery boundaries.
 
-## Offline Replay Tests
+## Exact Offline Replay Tests
 
 Purpose:
 
-- Run exact replay and offline fork replay against sanitized fixtures.
+- Run exact replay against sanitized fixtures.
 - Confirm that recorded model outputs and recorded tool outputs are used correctly.
 
 Proves:
 
 - Captured paths can be reproduced offline.
-- Replay mechanics, tool-output injection, and deterministic assertions work for the fixture.
+- Exact replay mechanics, recorded-dependency injection, and deterministic assertions work for the fixture.
 
 Does not prove:
 
 - Production readiness.
 - Broad framework compatibility.
 - Live model quality.
+
+## Planned Fork Replay Tests
+
+Fork replay is not implemented in `v0.4.1`. When that mode exists, separate offline tests should freeze recorded tool/dependency outcomes while exercising an explicit fake or recorded model adapter. Opt-in live-model experiments must remain outside default tests and CI.
 
 ## Future Integration Tests Against Agentic-chatbot
 

@@ -25,9 +25,12 @@ Read [PROJECT_MEMORY.md](../PROJECT_MEMORY.md) first. This directory is the auth
 - [Observability](observability.md): optional local cross-service traces, replay links, metrics, verification commands, and security limitations.
 - [Verification ledger](verification-ledger.md): commands and methods actually executed, results, environments, revisions, and limitations.
 - [Git workflow](git-workflow.md): branch, commit, pull-request, release, rollback, artifact, and secret rules.
+- [Changelog](../CHANGELOG.md): concise software release history; contract versions remain independent.
+- [v0.4.1 release candidate notes](releases/v0.4.1.md): public release scope, evidence routing, artifacts, and limitations.
 - [Local operations](operations/): development-only Kafka, gateway, worker, capsule, Collector, metrics, and SQLite runbooks.
 - [Local Kubernetes operations](operations/kubernetes.md): dedicated kind lifecycle, port-forward access, verification, persistence, and failure triage.
 - [Local Terraform operations](operations/terraform.md): guarded foundation plan/apply/state/drift/destroy lifecycle and ownership order.
+- [Local dashboard](operations/dashboard.md): localhost workbench, trusted startup-only custom runner registration, and capture-to-replay workflow.
 
 ## Documentation Ownership and Update Table
 

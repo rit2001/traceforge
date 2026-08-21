@@ -22,7 +22,7 @@ A replay mode that uses recorded model outputs and recorded tool outputs to repr
 
 ## Fork Replay
 
-A replay mode that keeps tool outputs recorded while allowing prompt, graph, or model behaviour to run again under controlled conditions.
+A planned replay mode that keeps tool/dependency outputs recorded while allowing prompt, graph, or model behaviour to run again under controlled conditions. It is not implemented in `v0.4.1`.
 
 ## Fixture
 
