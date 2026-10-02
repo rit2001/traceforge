@@ -9,8 +9,13 @@ TraceForge focuses on one narrow problem: preserve a failed agent execution well
 ## Implementation Status
 
 - **Implemented:** controlled capture, sanitization, sealing, structural/semantic/integrity validation, exact offline replay, deterministic observation comparison, separate developer-approved regression specifications, and pytest export.
-- **Partial:** capture and framework/dependency integration are bounded to tested Python, LangGraph, model, and HTTP paths.
-- **Planned:** generic tool capture, real-agent integration, richer execution diffing, fork replay, and opt-in fresh-model replay.
+- **Partial:** capture and framework integration remain bounded, while Replay Capsule `0.2.0` provides a framework-independent generic tool dependency primitive.
+- **Planned:** real-agent integration, richer execution diffing, fork replay, and opt-in fresh-model replay.
+
+The generic tool primitive accepts exact-replay evidence only when the standard scanner leaves a
+tool result unchanged as JSON. If not, the application still receives the original successful
+result, but the pending `CaptureSession` cannot produce a capsule draft. No generic result
+projection/sanitizer API exists in v0.5.
 
 ## Target Developer
 

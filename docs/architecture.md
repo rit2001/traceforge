@@ -6,10 +6,10 @@ The original spike architecture was local, narrow, and file-based. The v0.2 work
 
 Current component status:
 
-- **Implemented:** explicit controlled capture with best-effort redaction; Replay Capsule sealing and validation; exact replay with recorded model and HTTP outcomes; deterministic observation comparison; separate regression evaluation; pytest export; CLI; local workbench and SQLite replay history.
+- **Implemented:** explicit controlled capture with best-effort redaction; Replay Capsule `0.1.0` and `0.2.0` sealing and validation; exact replay with recorded model, HTTP, and generic tool outcomes; deterministic observation comparison; separate regression evaluation; pytest export; CLI; local workbench and SQLite replay history.
 - **Implemented in the optional local distributed path:** Go ingestion, bounded enqueueing, Kafka transport, Python validation/assembly, SQLite event-ID deduplication and ordering, DLQ commit safety, sealed capsule output, W3C propagation, optional spans, and Prometheus metrics.
-- **Partial:** Python/LangGraph capture and dependency coverage. The repository has one bounded LangGraph adapter and recorded model/HTTP adapters, not arbitrary framework or generic tool capture.
-- **Planned:** fork replay, fresh-model replay, richer graph/message/tool diff views, generic tool dependency contracts, hosted trace search, and production infrastructure.
+- **Partial:** Python/LangGraph capture coverage. The repository has one bounded LangGraph adapter and a framework-independent tool dependency primitive, not arbitrary framework capture or a real-agent integration.
+- **Planned:** real-agent integration through the generic tool boundary, fork replay, fresh-model replay, richer graph/message/tool diff views, hosted trace search, and production infrastructure.
 
 The original spike avoided services and message queues. The optional v0.2 Go/Kafka path exists specifically to keep capture publishing off the primary application's synchronous request path; it is still a local development topology, not a production deployment claim.
 
@@ -68,7 +68,7 @@ This is the baseline reproducibility check. If exact replay cannot reproduce the
 
 The feasibility implementation keeps extension points at the replay boundary rather than inside captured evidence:
 
-- `DependencyAdapter` supplies recorded external outcomes to subject code. The current implementation consumes model and HTTP fixtures sequentially and fails closed; future dependency kinds belong behind this interface.
+- `DependencyAdapter` supplies recorded external outcomes to subject code. The current implementation consumes model, HTTP, and tool fixtures in one sequence and fails closed; future dependency kinds belong behind this interface.
 - `FrameworkAdapter` invokes trusted local subject code with an injected dependency adapter. Framework-specific integrations belong here and must not mutate the capsule.
 - `CapsuleStore` owns local JSON loading and saving. Future storage implementations may change retrieval but must return the immutable captured document unchanged and must not rewrite evidence during reads.
 
@@ -77,6 +77,20 @@ The feasibility implementation keeps extension points at the replay boundary rat
 The replay CLI loads `MODULE:FUNCTION` runners as trusted local Python code. Importing and executing such a runner has the same authority as running that module directly; capsules must not select untrusted runner code.
 
 Exact replay temporarily patches common Python socket entry points to fail live-network attempts. This guard is process-wide while active and is not safe for unrelated concurrent network work in other threads. It is a feasibility safeguard, not an operating-system sandbox.
+
+Replay Capsule `0.2.0` adds generic tool dependencies to the same global sequence used by model
+and HTTP calls. `CaptureSession.record_tool` executes the live callable only during capture;
+`invoke_recorded_tool` accepts no live callable and returns or safely raises the recorded outcome.
+Default argument sanitization rejects before execution whenever generic redaction would change
+request identity. Applications may supply a reviewed deterministic sanitizer. Exact replay
+reconstructs only allow-listed built-in failure types, initially `TimeoutError`, and rejects
+unsupported recorded tool failures before invoking subject code. See
+[ADR-0007](decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md).
+For successful results, capture returns the original object and records it only when standard
+scanning leaves its JSON value unchanged. Otherwise the session retains no result/dependency,
+continues the application call normally, and rejects `finish()` with an unreplayable-capture error.
+Generic tool capture rejects custom session scanners before tool execution so replay identity does
+not depend on hidden runtime scanner configuration.
 
 ## Planned: Fork Replay
 
@@ -193,7 +207,7 @@ See the responsibility-level [codebase map](codebase-map.md), operational [Kafka
 
 ## Open Questions
 
-- What is the smallest generic tool dependency contract that preserves fail-closed request identity and side-effect safety?
+- Which application-owned deterministic sanitizer is appropriate for the first real LangGraph tool arguments?
 - Which framework capture seam can support one real LangGraph application without implying arbitrary-agent compatibility?
 - How should a future fork replay identify probabilistic fresh-model execution in results and regression policy?
 - Which graph, message, and tool differences are portable enough to remain outside framework-specific capsule fields?

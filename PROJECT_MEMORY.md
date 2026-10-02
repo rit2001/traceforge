@@ -8,9 +8,9 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
 
 ## Current Verified Capabilities
 
-- Replay Capsule v0 (`0.1.0`) structural and semantic validation, RFC 8785 canonicalization, SHA-256 request fingerprints, and sealing.
+- Replay Capsule `0.1.0` compatibility plus successor `0.2.0` structural and semantic validation, RFC 8785 canonicalization, SHA-256 request fingerprints, and sealing.
 - Best-effort capture/redaction for Python plus a controlled optional LangGraph adapter.
-- Exact offline replay with recorded model and HTTP outcomes, sequential request matching, fail-closed fixtures, a process-wide network guard, deterministic comparison, regression evaluation, and pytest export.
+- Exact offline replay with recorded model, HTTP, and generic tool outcomes, global sequential request matching, fail-closed fixtures, a process-wide network guard, deterministic comparison, regression evaluation, and pytest export.
 - Controlled weather, RAG citation-grounding, and tool-argument-safety examples.
 - Local FastAPI dashboard with allow-listed runners and SQLite replay history.
 - Optional local distributed ingestion: Go HTTP gateway, bounded asynchronous Kafka publishing, at-least-once Python consumption, SQLite ordering/idempotency, DLQ handling, capsule assembly, and sealing.
@@ -46,7 +46,7 @@ Architecture detail belongs in [docs/architecture.md](docs/architecture.md), and
 - Regression specifications and generated tests remain separate from original evidence and require developer approval.
 - Telemetry correlation, replay history, and assembly state are operational data in SQLite or telemetry systems, never capsule fields.
 
-The normative format and integrity rules are in [docs/contracts/replay-capsule-v0.md](docs/contracts/replay-capsule-v0.md) and [ADR-0002](docs/decisions/ADR-0002-replay-capsule-v0-format.md).
+The normative format and integrity rules are in [the `0.1.0` contract](docs/contracts/replay-capsule-v0.md), [the `0.2.0` contract](docs/contracts/replay-capsule-v0.2.md), [ADR-0002](docs/decisions/ADR-0002-replay-capsule-v0-format.md), and [ADR-0007](docs/decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md).
 
 ## Replay Guarantees and Non-Guarantees
 
@@ -91,20 +91,27 @@ The canonical security model is [docs/security.md](docs/security.md); vulnerabil
 - [ADR-0004](docs/decisions/ADR-0004-repository-memory-and-navigation.md): mandatory repository memory, authority routing, evidence ledger, and contributor update contract.
 - [ADR-0005](docs/decisions/ADR-0005-local-kubernetes-kind-deployment.md): native-Kustomize local kind topology, container security, PVC persistence, automation, and claim boundaries.
 - [ADR-0006](docs/decisions/ADR-0006-terraform-kustomize-ownership.md): local Terraform foundation, state boundary, and disjoint Terraform/Kustomize ownership.
+- [ADR-0007](docs/decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md): Replay Capsule `0.2.0`, generic ordered tool dependencies, safe request identity, and bounded failure replay.
 
 ADRs are historical records. Supersede them with a new ADR; do not silently rewrite accepted decisions.
 
 ## Current Branch, Milestone, and Limitations
 
 - Documented branch: `main`; retained branch `release/v0.4.1` and tag `v0.4.1` identify the verified release commit.
-- Current milestone: Public Beta `v0.4.1` is published without changing Replay Capsule `0.1.0`, Capture Event `0.2.0`, exact-replay semantics, or infrastructure ownership.
-- Known limitations: no fork/live replay; no production client integration; redaction is best effort; the replay network guard is process-wide; transport is at least once; local SQLite is single writer and not a distributed store; Kafka is ephemeral in kind; the RWO PVC is deleted with the cluster; local Terraform state is ignored and has no remote encryption/locking/backup; concurrent host inspection of a live worker WAL is unsupported; kind, Terraform, and the Collector topology are local development only.
+- Current milestone: `v0.5.0 — Real Agent Capture` is active; the generic Replay Capsule `0.2.0` tool boundary is implemented for review while `0.1.0` remains unchanged.
+- Known limitations: no real-agent integration or structured diff yet; tool results that require
+  sanitization make the pending capture ineligible for an exact-replay draft while the application
+  still receives its original result; generic tool capture requires the standard scanner; only
+  `TimeoutError` has approved concrete tool-failure reconstruction; no fork/live replay; redaction
+  remains best effort; the replay network guard is process-wide; transport is at least once; local
+  SQLite is single writer; and kind, Terraform, and the Collector topology are local development
+  only.
 
 Live branch, milestone, blockers, and assumptions belong in [docs/project-state.md](docs/project-state.md), not in this summary.
 
 ## Exact Next Approved Milestone
 
-The next product milestone is `v0.5.0 — Real Agent Capture`: prove one real sanitized LangGraph application against the replay-first path. Implementation requires a separately approved scoped task.
+After review of the generic tool boundary, the next approved v0.5.0 slice is one real sanitized LangGraph tool execution through capture, sealing, exact replay, regression, and structured diff.
 
 ## Required Reading Order
 

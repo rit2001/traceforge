@@ -39,6 +39,11 @@ Planned work:
 - introduce a richer, reviewable execution diff; and
 - publish a reproducible integration tutorial.
 
+Issue #2's generic tool dependency primitive is implemented for review: Replay Capsule `0.2.0`
+adds ordered tool records, fail-closed sanitized identity, successful recorded result replay, and a
+bounded safe failure mapping while retaining `0.1.0`. The real sanitized LangGraph application,
+transport integration, richer execution diff, and tutorial remain milestone work.
+
 Exit evidence should include an offline, sanitized capture → seal → exact replay → regression path for the selected application. This is not a claim of arbitrary Python or LangGraph support.
 
 ## v0.6.0 — Fork Replay

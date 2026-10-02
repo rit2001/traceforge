@@ -5,8 +5,8 @@ This document owns the current repository responsibility map. Update it whenever
 ## Schemas
 
 - **Responsibility:** Define the structural contracts for sealed Replay Capsules and transport capture events.
-- **Important files:** [schemas/replay-capsule-v0.schema.json](../schemas/replay-capsule-v0.schema.json), [schemas/capture-event-v0.schema.json](../schemas/capture-event-v0.schema.json), and [schemas/fixtures/capture-events/](../schemas/fixtures/capture-events/).
-- **Inputs:** UTF-8 JSON capsule documents or `0.2.0` capture-event envelopes.
+- **Important files:** [schemas/replay-capsule-v0.schema.json](../schemas/replay-capsule-v0.schema.json), [schemas/replay-capsule-v0.2.schema.json](../schemas/replay-capsule-v0.2.schema.json), [schemas/capture-event-v0.schema.json](../schemas/capture-event-v0.schema.json), and [schemas/fixtures/capture-events/](../schemas/fixtures/capture-events/).
+- **Inputs:** UTF-8 `0.1.0` or `0.2.0` capsule documents, or `0.2.0` capture-event envelopes.
 - **Outputs:** Structural acceptance or a validation failure.
 - **Invariants:** Draft 2020-12; TraceForge-owned objects reject unknown properties; schema validation does not prove semantic validity, integrity, ordering, idempotency, or secret absence.
 - **Extension points:** A new versioned schema plus compatibility/migration rules; never reinterpret an existing version silently.
@@ -28,7 +28,7 @@ This document owns the current repository responsibility map. Update it whenever
 - **Important files:** [dependencies.py](../src/traceforge/dependencies.py), [network.py](../src/traceforge/network.py), [replay.py](../src/traceforge/replay.py), [regression.py](../src/traceforge/regression.py), and [export.py](../src/traceforge/export.py).
 - **Inputs:** A valid sealed capsule, trusted `FrameworkAdapter`/runner, and optional regression specification.
 - **Outputs:** `ReplayResult`, assertion results, or a generated offline test file.
-- **Invariants:** Exact replay freezes model and tool/HTTP outcomes; requests match sequence and identity; missing/mismatched/extra dependencies fail closed; no live fallback; evidence remains unchanged; assertions live outside the capsule.
+- **Invariants:** Exact replay freezes model, HTTP, and generic tool outcomes; requests match one global sequence and sanitized identity; missing/mismatched/reordered/extra dependencies fail closed; no live fallback; unsupported tool failures stop before subject execution; evidence remains unchanged; assertions live outside the capsule.
 - **Extension points:** `DependencyAdapter`, `FrameworkAdapter`, new comparison views, and future explicitly approved fork replay.
 - **Tests:** [tests/test_replay.py](../tests/test_replay.py), [tests/test_export.py](../tests/test_export.py), [tests/test_case_studies.py](../tests/test_case_studies.py), and [tests/test_langgraph_integration.py](../tests/test_langgraph_integration.py).
 
@@ -36,11 +36,11 @@ This document owns the current repository responsibility map. Update it whenever
 
 - **Responsibility:** Record invocation facts, dependency outcomes, execution events, and observations while applying best-effort sanitization before returning a draft.
 - **Important files:** [capture.py](../src/traceforge/capture.py), [capture_events.py](../src/traceforge/capture_events.py), [interfaces.py](../src/traceforge/interfaces.py), and [integrations/](../src/traceforge/integrations/).
-- **Inputs:** Local Python invocation data, model/HTTP request and outcome data, events, and an optional scanner.
-- **Outputs:** Sanitized unsealed capsule drafts or sanitized validated transport events.
-- **Invariants:** Secrets are never intentionally persisted; scan success is not proof of safety; derived fingerprints/integrity are absent until sealing; capture must not require LangGraph in core imports.
+- **Inputs:** Local Python invocation data, model/HTTP requests, tool arguments and callables, dependency outcomes, events, an optional scanner, and an optional deterministic tool-argument sanitizer.
+- **Outputs:** Sanitized unsealed capsule drafts, a typed unreplayable-capture failure at `finish()`, or sanitized validated transport events.
+- **Invariants:** Secrets are never intentionally persisted; tool arguments fail before execution when generic redaction would change identity; successful live tool results are returned unchanged and enter evidence only when standard scanning preserves their JSON value; invalid tool-result evidence is not retained; scan success is not proof of safety; derived fingerprints/integrity are absent until sealing; capture must not require LangGraph in core imports.
 - **Extension points:** `RedactionScanner`, framework adapters, dependency wrappers, and `EventPublisher`.
-- **Tests:** [tests/test_capture.py](../tests/test_capture.py), [tests/test_langgraph_integration.py](../tests/test_langgraph_integration.py), and capture-event tests.
+- **Tests:** [tests/test_capture.py](../tests/test_capture.py), [tests/test_tool_dependencies.py](../tests/test_tool_dependencies.py), [tests/test_langgraph_integration.py](../tests/test_langgraph_integration.py), and capture-event tests.
 
 ## Kafka Publisher
 

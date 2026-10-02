@@ -23,7 +23,11 @@ Does not prove:
 - A prompt improves real-world behaviour.
 - The integration with Agentic-chatbot works end to end.
 
-Current coverage includes capsule sealing/validation, exact replay failure modes, capture/redaction, regression/export, dashboard, capture-event schemas, Kafka publisher/assembly/DLQ semantics, OpenTelemetry correlation, metric-label bounds, and the Go gateway's validation, HTTP, publisher, telemetry, and outage/recovery boundaries.
+Current coverage includes both capsule versions, generic tool capture/replay, sensitive-identity
+rejection, mutating-sanitizer isolation, result-evidence invalidation without changing live tool
+success, exact replay failure modes, capture/redaction, regression/export, dashboard, capture-event
+schemas, Kafka publisher/assembly/DLQ semantics, OpenTelemetry correlation, metric-label bounds,
+and the Go gateway's validation, HTTP, publisher, telemetry, and outage/recovery boundaries.
 
 ## Exact Offline Replay Tests
 

@@ -8,7 +8,7 @@ TraceForge is an experimental local developer tool for capturing a failed Python
 
 ## What Actually Works?
 
-- Replay Capsule v0 sealing, validation, integrity, and fail-closed exact replay.
+- Replay Capsule `0.1.0` compatibility plus `0.2.0` generic tool sealing, validation, integrity, and fail-closed exact replay.
 - Best-effort capture/redaction and one controlled LangGraph integration.
 - Separate regression specifications, offline pytest export, and a local FastAPI/SQLite dashboard.
 - Three controlled cases: weather grounding, RAG citation grounding, and tool-argument safety.

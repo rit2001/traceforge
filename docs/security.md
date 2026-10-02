@@ -37,7 +37,12 @@ TraceForge work must not inspect, create, edit, or infer `.env` files.
 
 ## Header and API-Key Redaction
 
-Authorization headers and API keys must be redacted before persistence. Redaction should apply to tool arguments, tool outputs, model metadata, logs, errors, and any serialized request or response fields.
+Authorization headers and API keys must be redacted before persistence. Redaction should apply to tool arguments, tool outputs, model metadata, logs, errors, and any serialized request or response fields. Replay Capsule `0.2.0` rejects tool capture before execution when generic redaction would alter request identity. Applications may provide a reviewed deterministic sanitizer that maps sensitive identity-bearing arguments to stable safe values; keyed platform pseudonymization is not implemented.
+
+For successful tool results, `0.2.0` persists evidence only when the standard scanner leaves the
+JSON value unchanged. A result requiring transformation is returned normally to the application,
+is not retained as a dependency, and makes `CaptureSession.finish()` fail with value-free error
+text. Do not bypass that failure by persisting either the raw or transformed result.
 
 ## Prompts, Tool Arguments, Tool Outputs, and User Data
 
@@ -68,7 +73,7 @@ No secret value belongs in Terraform variables, plans, state, logs, outputs, or 
 ## Known Limitations
 
 - A versioned best-effort redaction scanner is implemented, but it cannot detect every sensitive value or prove secret absence.
-- Replay Capsule v0 is defined by the accepted [contract](contracts/replay-capsule-v0.md) and [structural schema](../schemas/replay-capsule-v0.schema.json).
+- Replay Capsule `0.1.0` and `0.2.0` are defined by their accepted [contracts](contracts/) and separate structural schemas. `0.1.0` remains unchanged.
 - Safe fixture review criteria are not detailed yet.
 - No production threat model exists yet.
 - The local dashboard and OTLP endpoint have no authentication, and transport is not a production security design.

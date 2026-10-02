@@ -30,7 +30,7 @@ TraceForge is designed around five boundaries:
 
 | Status | Capability |
 | --- | --- |
-| **Implemented** | Replay Capsule `0.1.0` sealing, RFC 8785 canonicalization, SHA-256 integrity, structural/semantic validation, exact offline replay, recorded model and HTTP playback, fail-closed matching, deterministic comparison, developer-authored regression specifications, pytest export, CLI, local FastAPI workbench, and SQLite replay history |
+| **Implemented** | Replay Capsule `0.1.0` compatibility and `0.2.0` tool-capable sealing, RFC 8785 canonicalization, SHA-256 integrity, structural/semantic validation, exact offline replay, recorded model/HTTP/tool playback, fail-closed matching, deterministic comparison, developer-authored regression specifications, pytest export, CLI, local FastAPI workbench, and SQLite replay history |
 | **Implemented** | Three controlled cases: weather grounding, RAG citation grounding, and consequential HTTP/tool arguments |
 | **Implemented** | Optional local Go ingestion gateway → Kafka → Python assembly worker → SQLite idempotency/assembly → sealed Replay Capsule path |
 | **Implemented** | Bounded ingestion queue, event-ID deduplication, at-least-once processing, DLQ commit-safety boundary, W3C trace-context propagation, optional OpenTelemetry spans, and Prometheus metrics |
@@ -53,7 +53,7 @@ seal an immutable Replay Capsule
 validate schema, semantics, request fingerprints, and integrity
         │
         ▼
-exact offline replay with recorded model/HTTP outcomes
+exact offline replay with recorded model/HTTP/tool outcomes
         │
         ▼
 compare observations and evaluate a separate regression spec
@@ -106,13 +106,13 @@ traceforge export-pytest capsule.json \
 
 ## Replay Capsule
 
-The [Replay Capsule contract](docs/contracts/replay-capsule-v0.md) is the immutable evidence boundary. A capsule contains sanitized inputs, execution observations, ordered recorded dependencies, provenance, and integrity metadata. Schema version `0.1.0` is independent from the TraceForge software release version.
+The [Replay Capsule `0.1.0` contract](docs/contracts/replay-capsule-v0.md) and successor [`0.2.0` contract](docs/contracts/replay-capsule-v0.2.md) define the immutable evidence boundary. A capsule contains sanitized inputs, execution observations, ordered recorded dependencies, provenance, and integrity metadata. Capsule schema versions are independent from the TraceForge software release version; sealed `0.1.0` evidence is not rewritten.
 
 Canonical JSON and SHA-256 bind the capsule contents. Request fingerprints bind recorded dependency outcomes to sanitized request identity. Regression expectations and telemetry correlation remain separate from capsule integrity.
 
 ## Exact Replay
 
-Exact replay is implemented for the tested dependency adapters. It freezes recorded model and HTTP outcomes, consumes them sequentially, and blocks common socket-level network entry points during replay. It rejects:
+Exact replay is implemented for the tested dependency adapters. It freezes recorded model, HTTP, and generic tool outcomes, consumes them in one sequence, and blocks common socket-level network entry points during replay. It rejects:
 
 - a request with a different fingerprint;
 - missing recorded outcomes;
@@ -209,7 +209,9 @@ Start with [docs/start-here.md](docs/start-here.md) and [docs/README.md](docs/RE
 ## Current Limitations
 
 - Capture is not generic across arbitrary Python or LangGraph applications.
-- Recorded model and HTTP dependencies exist, but there is no generic tool dependency contract.
+- Generic tool dependencies exist in Replay Capsule `0.2.0`, but no real LangGraph application has been integrated through them yet.
+- Tool results requiring sanitization cannot become exact-replay evidence: the application still
+  receives the original live result, but that `CaptureSession` fails closed at `finish()`.
 - Fork replay and fresh/live model replay are not implemented.
 - The socket guard is not an OS sandbox, and redaction is best effort.
 - Storage is local SQLite/filesystem evidence, not a searchable distributed trace store.

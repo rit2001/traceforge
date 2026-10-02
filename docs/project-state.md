@@ -1,6 +1,6 @@
 # Project State
 
-Last verified date: 2026-08-21.
+Last verified date: 2026-10-01.
 
 ## Current Phase
 
@@ -8,7 +8,10 @@ The replay feasibility implementation, optional local distributed-ingestion and 
 
 ## Current Milestone
 
-Public Beta `v0.4.1` is published. No post-release implementation milestone is active.
+`v0.5.0 — Real Agent Capture` is active. Issue #2's generic tool dependency primitive is
+implemented in the working tree for human review. It adds Replay Capsule `0.2.0` without modifying
+sealed `0.1.0` evidence or broadening framework support. A real LangGraph application and
+structured execution diff are not part of this completed slice.
 
 The release aligned package, CLI, Docker, CI, public documentation, license, contributor framework, artifacts, installation, localhost workbench, Kafka topic configuration, and bounded publication-safety surfaces. It did not redesign replay semantics, implement fork replay, or add production-readiness claims.
 
@@ -28,11 +31,11 @@ The release aligned package, CLI, Docker, CI, public documentation, license, con
 
 ## Repository Status
 
-Documentation, both structural schemas, the `traceforge-replay` distribution, controlled local replay artifacts, focused tests, an optional Kafka worker, and a Go ingestion gateway exist.
+Documentation, Replay Capsule `0.1.0` and `0.2.0` schemas, the Capture Event schema, the `traceforge-replay` distribution, controlled local replay artifacts, focused tests, an optional Kafka worker, and a Go ingestion gateway exist.
 
 The documented release state is on `main`; retained branch `release/v0.4.1` and tag `v0.4.1` point to the verified release commit.
 
-The `traceforge-replay` distribution and `traceforge` package/CLI are prepared as software release candidate `0.4.1`; Replay Capsule `0.1.0` and Capture Event `0.2.0` remain independent contracts. The package provides capture with best-effort redaction, sealing, validation, exact replay, deterministic comparison, regression evaluation/export, one optional LangGraph adapter, Kafka assembly commands, and a local dashboard. The optional local distributed path provides HTTP ingestion, Kafka transport, SQLite idempotency/assembly, Prometheus metrics, and opt-in OTLP tracing. Native manifests and kind overlays deploy those same containers locally. Terraform can manage only the local Kubernetes foundation. No fork replay, live replay, production capture integration, hosted service, authentication, cloud/production Kubernetes, or cloud Terraform exists.
+The published distribution remains `0.4.1`; Replay Capsule versions and Capture Event `0.2.0` are independent contracts. The working tree now supports explicit validation/replay dispatch for Replay Capsule `0.1.0` and `0.2.0`. `0.2.0` adds generic ordered tool capture/replay with reject-by-default sensitive request identity and a bounded `TimeoutError` replay mapping. The package still has only one controlled LangGraph adapter and no real-agent integration, fork replay, live replay, hosted service, authentication, cloud/production Kubernetes, or cloud Terraform.
 
 ## Confirmed Decisions
 
@@ -49,6 +52,7 @@ The `traceforge-replay` distribution and `traceforge` package/CLI are prepared a
 - `PROJECT_MEMORY.md` is the mandatory long-term entry point; detailed status, decisions, evidence, ownership, and runbooks retain separate canonical owners under ADR-0004.
 - The local Kubernetes gate uses native manifests and Kustomize, one dedicated kind cluster, no public LoadBalancer, and the persistence/security boundaries accepted in ADR-0005.
 - Terraform owns only the Namespace, ResourceQuota, LimitRange, dedicated ServiceAccounts, labels, and outputs; Kustomize owns all workloads, Services, ConfigMaps, PVC/application data, and Pod configuration under ADR-0006.
+- Replay Capsule `0.1.0` remains immutable; `0.2.0` adds generic tool dependencies and explicit version dispatch under ADR-0007.
 
 ## Current Assumptions
 
@@ -60,7 +64,9 @@ The `traceforge-replay` distribution and `traceforge` package/CLI are prepared a
 ## Known Blockers and Open Questions
 
 - A stable generic real-agent capture boundary is not defined.
-- A generic tool dependency contract is not defined.
+- A real application-level sanitizer policy and integration boundary must still be selected for the first LangGraph application.
+- Tool results requiring transformation cannot become v0.5 exact-replay evidence; no generic
+  application-owned result sanitizer/projection contract exists.
 - Fork replay and richer graph/message/tool diff semantics are not defined in executable code.
 - Sanitization remains best effort and still requires human review before fixtures are shared.
 - Concurrent host-side inspection of the worker's bind-mounted SQLite WAL is unsupported on Docker Desktop; use a service-owned reader or inspect after shutdown.
@@ -72,7 +78,9 @@ Cloud Terraform, remote production state, cloud/production Kubernetes, Helm, ope
 
 ## Exact Next Approved Task
 
-The next product milestone is `v0.5.0 — Real Agent Capture`: prove one real sanitized LangGraph application against the replay-first path. Implementation requires a separately approved scoped task; no `v0.5.0` implementation is active.
+After human review of Issue #2, integrate one real sanitized LangGraph tool execution through the
+new generic boundary and prove capture → seal → exact replay → regression → structured diff. Keep
+application-specific graph code and sanitizer ownership outside the generic replay core.
 
 ## Milestone-Boundary Checklist
 
