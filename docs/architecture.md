@@ -8,8 +8,11 @@ Current component status:
 
 - **Implemented:** explicit controlled capture with best-effort redaction; Replay Capsule `0.1.0` and `0.2.0` sealing and validation; exact replay with recorded model, HTTP, and generic tool outcomes; deterministic observation comparison; separate regression evaluation; pytest export; CLI; local workbench and SQLite replay history.
 - **Implemented in the optional local distributed path:** Go ingestion, bounded enqueueing, Kafka transport, Python validation/assembly, SQLite event-ID deduplication and ordering, DLQ commit safety, sealed capsule output, W3C propagation, optional spans, and Prometheus metrics.
-- **Partial:** framework integration coverage. The repository has one bounded LangGraph adapter and framework-independent capture/dependency primitives, not arbitrary framework capture or a real-agent integration.
-- **Planned:** real-agent integration through the generic tool boundary, fork replay, fresh-model replay, richer portable event/message/dependency diff views, hosted trace search, and production infrastructure.
+- **Partial:** framework integration coverage. The repository has one bounded LangGraph adapter and
+  framework-independent capture/dependency primitives; a separate Agentic-chatbot worktree proves
+  one real application-owned adapter, not arbitrary framework capture.
+- **Planned:** fork replay, fresh-model replay, richer portable event/message/dependency diff views,
+  hosted trace search, and production infrastructure.
 
 The original spike avoided services and message queues. The optional v0.2 Go/Kafka path exists specifically to keep capture publishing off the primary application's synchronous request path; it is still a local development topology, not a production deployment claim.
 
@@ -54,7 +57,9 @@ Capsules must never contain API keys, secrets, authorization headers, or unredac
 
 ## Agentic-chatbot Integration Boundary
 
-TraceForge and Agentic-chatbot remain separate repositories. TraceForge may eventually expose a Python package/API that Agentic-chatbot installs locally on a dedicated integration branch.
+TraceForge and Agentic-chatbot remain separate repositories. The dedicated Agentic-chatbot
+integration worktree installs TraceForge through its Python package/API and owns provider,
+message, graph, and tool translation.
 
 The client application is responsible for recording and exporting a sanitised Replay Capsule through that integration. TraceForge must not hard-code an absolute path to Agentic-chatbot, copy Agentic-chatbot source code, or move integration-specific end-to-end changes into the TraceForge repository.
 

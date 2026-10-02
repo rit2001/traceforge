@@ -10,6 +10,9 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
 
 - Replay Capsule `0.1.0` compatibility plus successor `0.2.0` structural and semantic validation, RFC 8785 canonicalization, SHA-256 request fingerprints, and sealing.
 - Best-effort capture/redaction for Python plus a controlled optional LangGraph adapter.
+- One separately maintained Agentic-chatbot integration proves the editable package/API boundary,
+  real ordered ChatGroq/Tavily capture, persisted exact replay with both live callables disabled,
+  fail-closed changed requests, and external regression evaluation.
 - Exact offline replay with recorded model, HTTP, and generic tool outcomes, global sequential request matching, fail-closed fixtures, a process-wide network guard, deterministic comparison, regression evaluation, and pytest export.
 - Controlled weather, RAG citation-grounding, and tool-argument-safety examples.
 - Local FastAPI dashboard with allow-listed runners and SQLite replay history.
@@ -23,7 +26,7 @@ Only the executed evidence in [docs/verification-ledger.md](docs/verification-le
 
 ## Explicit Non-Capabilities
 
-TraceForge does not currently provide fork replay, live replay, production capture integration, broad framework support, hosted storage, authentication, multi-tenancy, production operations, automatic repair, cloud/production Kubernetes or Terraform, ClickHouse, SaaS billing, or a production security guarantee. The local kind/Terraform gates are not evidence of high availability, scale, cloud compatibility, or security. They make no adoption, benchmark, reliability, or hallucination-elimination claim.
+TraceForge does not currently provide fork replay, live replay, arbitrary or production-wide capture instrumentation, broad framework support, hosted storage, authentication, multi-tenancy, production operations, automatic repair, cloud/production Kubernetes or Terraform, ClickHouse, SaaS billing, or a production security guarantee. The single real-agent proof and local kind/Terraform gates are not evidence of high availability, scale, cloud compatibility, or security. They make no adoption, benchmark, reliability, or hallucination-elimination claim.
 
 ## Architectural Invariants
 
@@ -106,8 +109,10 @@ ADRs are historical records. Supersede them with a new ADR; do not silently rewr
 ## Current Branch, Milestone, and Limitations
 
 - Documented branch: `main`; retained branch `release/v0.4.1` and tag `v0.4.1` identify the verified release commit.
-- Current milestone: `v0.5.0 — Real Agent Capture` is active; the generic Replay Capsule `0.2.0` tool boundary is implemented for review while `0.1.0` remains unchanged.
-- Known limitations: no real-agent integration or structured diff yet; tool results that require
+- Current milestone: `v0.5.0 — Real Agent Capture` is active; the generic Replay Capsule `0.2.0`
+  tool boundary and one separate real Agentic-chatbot integration are implemented for review while
+  `0.1.0` remains unchanged. Structured diff is not implemented.
+- Known limitations: only one application-owned real-agent integration exists; tool results that require
   sanitization make the pending capture ineligible for an exact-replay draft while the application
   still receives its original result; generic tool capture requires the standard scanner; only
   `TimeoutError` has approved concrete tool-failure reconstruction; no fork/live replay; redaction
@@ -119,9 +124,9 @@ Live branch, milestone, blockers, and assumptions belong in [docs/project-state.
 
 ## Exact Next Approved Milestone
 
-After review of the generic tool boundary, the next approved v0.5.0 slice is one real sanitized
-LangGraph tool execution translated through a thin adapter into framework-neutral capture,
-sealing, exact replay, regression, and structured diff semantics.
+After review of the real-agent integration, the next approved v0.5.0 slice is Issue #3: define and
+test a framework-neutral structured comparison over portable observations, ordered dependencies,
+events, and outputs. Framework-specific presentation remains adapter-side.
 
 ## Required Reading Order
 
