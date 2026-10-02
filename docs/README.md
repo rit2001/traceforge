@@ -23,6 +23,7 @@ Read [PROJECT_MEMORY.md](../PROJECT_MEMORY.md) first. This directory is the auth
 - [ADR-0005](decisions/ADR-0005-local-kubernetes-kind-deployment.md): accepted native-Kustomize local kind deployment, security, persistence, and claim boundaries.
 - [ADR-0006](decisions/ADR-0006-terraform-kustomize-ownership.md): accepted local Terraform foundation and disjoint Terraform/Kustomize object ownership.
 - [ADR-0007](decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md): accepted `0.2.0` tool dependency, sanitization, compatibility, and failure semantics.
+- [ADR-0008](decisions/ADR-0008-framework-agnostic-core.md): accepted framework-agnostic core and thin-adapter boundary for LangGraph and future integrations.
 - [Go ingestion gateway](services/go-ingestion-gateway.md): local HTTP ingestion, validation, backpressure, and Kafka publishing semantics.
 - [Observability](observability.md): optional local cross-service traces, replay links, metrics, verification commands, and security limitations.
 - [Verification ledger](verification-ledger.md): commands and methods actually executed, results, environments, revisions, and limitations.

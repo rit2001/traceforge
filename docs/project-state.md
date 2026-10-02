@@ -1,6 +1,6 @@
 # Project State
 
-Last verified date: 2026-10-01.
+Last verified date: 2026-10-02.
 
 ## Current Phase
 
@@ -53,6 +53,9 @@ The published distribution remains `0.4.1`; Replay Capsule versions and Capture 
 - The local Kubernetes gate uses native manifests and Kustomize, one dedicated kind cluster, no public LoadBalancer, and the persistence/security boundaries accepted in ADR-0005.
 - Terraform owns only the Namespace, ResourceQuota, LimitRange, dedicated ServiceAccounts, labels, and outputs; Kustomize owns all workloads, Services, ConfigMaps, PVC/application data, and Pod configuration under ADR-0006.
 - Replay Capsule `0.1.0` remains immutable; `0.2.0` adds generic tool dependencies and explicit version dispatch under ADR-0007.
+- TraceForge's capture core, capsule/dependency contracts, sealing, validation, replay, regression,
+  and future core diff semantics remain framework-agnostic under ADR-0008. LangGraph is the first
+  integration proof and must stay behind a thin adapter boundary.
 
 ## Current Assumptions
 
@@ -63,7 +66,8 @@ The published distribution remains `0.4.1`; Replay Capsule versions and Capture 
 
 ## Known Blockers and Open Questions
 
-- A stable generic real-agent capture boundary is not defined.
+- The framework-neutral capture inputs exist, but the thin real-agent adapter boundary is not yet
+  proven against a real application.
 - A real application-level sanitizer policy and integration boundary must still be selected for the first LangGraph application.
 - Tool results requiring transformation cannot become v0.5 exact-replay evidence; no generic
   application-owned result sanitizer/projection contract exists.
@@ -78,9 +82,11 @@ Cloud Terraform, remote production state, cloud/production Kubernetes, Helm, ope
 
 ## Exact Next Approved Task
 
-After human review of Issue #2, integrate one real sanitized LangGraph tool execution through the
-new generic boundary and prove capture → seal → exact replay → regression → structured diff. Keep
-application-specific graph code and sanitizer ownership outside the generic replay core.
+After human review of Issue #2, integrate one real sanitized LangGraph tool execution through a
+thin adapter into the generic boundary and prove capture → seal → exact replay → regression →
+structured diff. Keep application-specific graph code, callbacks, node/state semantics, and
+sanitizer ownership outside the generic core. If LangGraph's API shape appears to require a core
+change solely for LangGraph, stop and reconsider the adapter boundary.
 
 ## Milestone-Boundary Checklist
 

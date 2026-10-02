@@ -8,6 +8,11 @@ The top-level structure, canonicalization, integrity scope, observation structur
 record, model dependency, and HTTP dependency are unchanged from `0.1.0`. Regression
 specifications and telemetry correlation remain separate from immutable evidence.
 
+The contract remains framework-agnostic. `subject.framework` is descriptive provenance only, and
+generic internal events do not acquire graph, node, state-machine, or callback semantics. A
+framework adapter must translate native concepts before capture; sealing, validation, replay,
+regression, and diff logic do not interpret framework-specific meaning.
+
 ## Generic tool dependency
 
 `0.2.0` adds `tool` to the single globally ordered dependency union:

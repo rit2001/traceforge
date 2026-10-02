@@ -8,7 +8,7 @@ This document owns the current repository responsibility map. Update it whenever
 - **Important files:** [schemas/replay-capsule-v0.schema.json](../schemas/replay-capsule-v0.schema.json), [schemas/replay-capsule-v0.2.schema.json](../schemas/replay-capsule-v0.2.schema.json), [schemas/capture-event-v0.schema.json](../schemas/capture-event-v0.schema.json), and [schemas/fixtures/capture-events/](../schemas/fixtures/capture-events/).
 - **Inputs:** UTF-8 `0.1.0` or `0.2.0` capsule documents, or `0.2.0` capture-event envelopes.
 - **Outputs:** Structural acceptance or a validation failure.
-- **Invariants:** Draft 2020-12; TraceForge-owned objects reject unknown properties; schema validation does not prove semantic validity, integrity, ordering, idempotency, or secret absence.
+- **Invariants:** Draft 2020-12; TraceForge-owned objects reject unknown properties; schema validation does not prove semantic validity, integrity, ordering, idempotency, or secret absence; framework is descriptive provenance and no schema field has LangGraph graph/node/state semantics.
 - **Extension points:** A new versioned schema plus compatibility/migration rules; never reinterpret an existing version silently.
 - **Tests:** [tests/test_capsule.py](../tests/test_capsule.py), [tests/test_capture_event_schema.py](../tests/test_capture_event_schema.py), [tests/test_capture_event_fixtures.py](../tests/test_capture_event_fixtures.py), and the Go validator tests.
 
@@ -18,7 +18,7 @@ This document owns the current repository responsibility map. Update it whenever
 - **Important files:** [canonical.py](../src/traceforge/canonical.py), [schema.py](../src/traceforge/schema.py), [sealing.py](../src/traceforge/sealing.py), [validation.py](../src/traceforge/validation.py), [store.py](../src/traceforge/store.py), [exceptions.py](../src/traceforge/exceptions.py), and [interfaces.py](../src/traceforge/interfaces.py).
 - **Inputs:** Sanitized capsule drafts or sealed capsule documents.
 - **Outputs:** A new sealed document, validated immutable data, or a typed failure.
-- **Invariants:** Sealing does not mutate the caller's draft; validation never repairs; fingerprints and integrity use RFC 8785 plus SHA-256; unsupported versions fail; derived fields are recalculated by the sealer.
+- **Invariants:** Sealing does not mutate the caller's draft; validation never repairs; fingerprints and integrity use RFC 8785 plus SHA-256; unsupported versions fail; derived fields are recalculated by the sealer; core validation and sealing never interpret framework-native types or lifecycle semantics.
 - **Extension points:** `CapsuleStore` for retrieval, version-dispatched schemas/migrations, and explicitly versioned dependency kinds.
 - **Tests:** [tests/test_capsule.py](../tests/test_capsule.py) and [tests/test_cli.py](../tests/test_cli.py).
 
@@ -28,8 +28,8 @@ This document owns the current repository responsibility map. Update it whenever
 - **Important files:** [dependencies.py](../src/traceforge/dependencies.py), [network.py](../src/traceforge/network.py), [replay.py](../src/traceforge/replay.py), [regression.py](../src/traceforge/regression.py), and [export.py](../src/traceforge/export.py).
 - **Inputs:** A valid sealed capsule, trusted `FrameworkAdapter`/runner, and optional regression specification.
 - **Outputs:** `ReplayResult`, assertion results, or a generated offline test file.
-- **Invariants:** Exact replay freezes model, HTTP, and generic tool outcomes; requests match one global sequence and sanitized identity; missing/mismatched/reordered/extra dependencies fail closed; no live fallback; unsupported tool failures stop before subject execution; evidence remains unchanged; assertions live outside the capsule.
-- **Extension points:** `DependencyAdapter`, `FrameworkAdapter`, new comparison views, and future explicitly approved fork replay.
+- **Invariants:** Exact replay freezes model, HTTP, and generic tool outcomes; requests match one global sequence and sanitized identity; missing/mismatched/reordered/extra dependencies fail closed; no live fallback; unsupported tool failures stop before subject execution; evidence remains unchanged; assertions live outside the capsule; replay, regression, and future core diff semantics operate only on framework-neutral observations.
+- **Extension points:** `DependencyAdapter`, thin `FrameworkAdapter` implementations, portable comparison views, adapter-side framework-specific presentations, and future explicitly approved fork replay. A new framework must not require evidence/replay semantic changes.
 - **Tests:** [tests/test_replay.py](../tests/test_replay.py), [tests/test_export.py](../tests/test_export.py), [tests/test_case_studies.py](../tests/test_case_studies.py), and [tests/test_langgraph_integration.py](../tests/test_langgraph_integration.py).
 
 ## Capture SDK
@@ -38,8 +38,8 @@ This document owns the current repository responsibility map. Update it whenever
 - **Important files:** [capture.py](../src/traceforge/capture.py), [capture_events.py](../src/traceforge/capture_events.py), [interfaces.py](../src/traceforge/interfaces.py), and [integrations/](../src/traceforge/integrations/).
 - **Inputs:** Local Python invocation data, model/HTTP requests, tool arguments and callables, dependency outcomes, events, an optional scanner, and an optional deterministic tool-argument sanitizer.
 - **Outputs:** Sanitized unsealed capsule drafts, a typed unreplayable-capture failure at `finish()`, or sanitized validated transport events.
-- **Invariants:** Secrets are never intentionally persisted; tool arguments fail before execution when generic redaction would change identity; successful live tool results are returned unchanged and enter evidence only when standard scanning preserves their JSON value; invalid tool-result evidence is not retained; scan success is not proof of safety; derived fingerprints/integrity are absent until sealing; capture must not require LangGraph in core imports.
-- **Extension points:** `RedactionScanner`, framework adapters, dependency wrappers, and `EventPublisher`.
+- **Invariants:** Secrets are never intentionally persisted; tool arguments fail before execution when generic redaction would change identity; successful live tool results are returned unchanged and enter evidence only when standard scanning preserves their JSON value; invalid tool-result evidence is not retained; scan success is not proof of safety; derived fingerprints/integrity are absent until sealing; capture core has no LangGraph imports, types, node semantics, callbacks, or framework-specific assumptions.
+- **Extension points:** `RedactionScanner`, thin framework adapters that translate native signals into generic capture inputs, dependency wrappers, and `EventPublisher`. If an integration needs a core change solely due to its API shape, stop and reconsider the adapter boundary.
 - **Tests:** [tests/test_capture.py](../tests/test_capture.py), [tests/test_tool_dependencies.py](../tests/test_tool_dependencies.py), [tests/test_langgraph_integration.py](../tests/test_langgraph_integration.py), and capture-event tests.
 
 ## Kafka Publisher

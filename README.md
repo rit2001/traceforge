@@ -223,7 +223,7 @@ Start with [docs/start-here.md](docs/start-here.md) and [docs/README.md](docs/RE
 
 The public roadmap is evidence-gated:
 
-- `v0.5.0` — prove sanitized capture in one real LangGraph agent application and define a generic dependency boundary;
+- `v0.5.0` — prove sanitized capture in one real LangGraph agent application through a thin adapter while preserving framework-neutral core semantics;
 - `v0.6.0` — implement fork replay and richer execution comparison;
 - `v0.7.0` — harden the local event pipeline and its recovery operations; and
 - `v0.8.0` — add a repeatable measurement and capacity-evidence harness.
@@ -235,6 +235,7 @@ See [docs/roadmap.md](docs/roadmap.md). No `v1.0` scope is defined.
 - Keep exact replay offline and fail closed.
 - Preserve sealed evidence; attach expectations and correlations separately.
 - Prefer explicit adapters and versioned contracts to implicit framework magic.
+- Keep capture, capsule, dependency, replay, regression, and core diff semantics framework-agnostic; LangGraph is an adapter-side integration proof.
 - Treat Kafka as at-least-once transport and enforce idempotency at the domain boundary.
 - Make live model execution opt-in and visible if it is introduced later.
 - Add distributed or cloud infrastructure only after measured need and an accepted design decision.

@@ -21,6 +21,14 @@ Every capsule contains these required top-level sections:
 
 External recorded dependencies are distinct from internal original observations. `dependencies` contains external model or HTTP request/outcome fixtures. `original_observation.events` contains the application or agent's internal execution evidence. An internal event must not be treated as an external fixture merely because it mentions a model or HTTP call.
 
+## Framework Neutrality
+
+The capsule contract is framework-agnostic. `subject.framework` is descriptive provenance only,
+and the generic internal-event envelope does not assign graph, node, state-machine, or callback
+semantics to `kind`, `name`, or `data`. Framework adapters translate native concepts into this
+contract before capture. Sealing, validation, replay, regression, and diff logic must not infer
+framework-specific meaning from those values.
+
 The capsule contains immutable evidence of the original run. Mutable regression expectations are separate artifacts and are not embedded in v0 capsules. A developer may revise an expectation without rewriting the captured evidence; AI-generated expectations require developer approval before use as regression tests.
 
 ## Replay Semantics

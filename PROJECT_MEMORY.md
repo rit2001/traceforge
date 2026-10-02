@@ -28,6 +28,12 @@ TraceForge does not currently provide fork replay, live replay, production captu
 ## Architectural Invariants
 
 - Python, LangGraph, and tool-calling agents are the first supported product boundary.
+- TraceForge's capture core, Replay Capsule contracts, dependency contract, sealing, validation,
+  replay, regression, and future core diff semantics are framework-agnostic. LangGraph is the first
+  integration proof and all LangGraph translation remains behind a thin adapter boundary.
+- Core semantics never interpret LangGraph types, `StateGraph`, node semantics, callbacks, or graph
+  state. If LangGraph's API shape appears to require a core change solely for LangGraph, stop and
+  reconsider the boundary rather than coupling the core.
 - Initial execution and default tests are local and offline.
 - Replay, evidence integrity, and approved regression export remain the product center.
 - Core imports do not require optional framework, dashboard, Kafka, or telemetry dependencies.
@@ -92,6 +98,8 @@ The canonical security model is [docs/security.md](docs/security.md); vulnerabil
 - [ADR-0005](docs/decisions/ADR-0005-local-kubernetes-kind-deployment.md): native-Kustomize local kind topology, container security, PVC persistence, automation, and claim boundaries.
 - [ADR-0006](docs/decisions/ADR-0006-terraform-kustomize-ownership.md): local Terraform foundation, state boundary, and disjoint Terraform/Kustomize ownership.
 - [ADR-0007](docs/decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md): Replay Capsule `0.2.0`, generic ordered tool dependencies, safe request identity, and bounded failure replay.
+- [ADR-0008](docs/decisions/ADR-0008-framework-agnostic-core.md): framework-agnostic evidence,
+  replay, regression, and diff semantics with framework-specific translation confined to adapters.
 
 ADRs are historical records. Supersede them with a new ADR; do not silently rewrite accepted decisions.
 
@@ -111,7 +119,9 @@ Live branch, milestone, blockers, and assumptions belong in [docs/project-state.
 
 ## Exact Next Approved Milestone
 
-After review of the generic tool boundary, the next approved v0.5.0 slice is one real sanitized LangGraph tool execution through capture, sealing, exact replay, regression, and structured diff.
+After review of the generic tool boundary, the next approved v0.5.0 slice is one real sanitized
+LangGraph tool execution translated through a thin adapter into framework-neutral capture,
+sealing, exact replay, regression, and structured diff semantics.
 
 ## Required Reading Order
 

@@ -34,6 +34,13 @@ TraceForge is an experimental replay-first project with an optional local distri
 ## Product Boundaries
 
 - First support only Python, LangGraph, and tool-calling agents.
+- TraceForge core remains framework-agnostic; LangGraph is the first integration proof, not the
+  evidence or replay model.
+- Keep LangGraph types, `StateGraph`, node semantics, callbacks, and framework-specific assumptions
+  behind integration adapters. A new framework should require a thin adapter, not core semantic
+  changes.
+- If LangGraph's API shape appears to require a core-only accommodation, stop and reconsider the
+  adapter boundary before implementation.
 - Initial execution is local-only.
 - Exact replay freezes model and tool outputs.
 - Fork replay freezes tool outputs but runs the model or prompt again.

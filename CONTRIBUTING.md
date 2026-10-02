@@ -122,7 +122,12 @@ Only record verification evidence that was actually executed. Never silently rew
 
 Open a design issue before changing Replay Capsule semantics, capture-event compatibility, replay modes, storage ownership, delivery guarantees, framework boundaries, or infrastructure ownership. Include constraints, alternatives, failure modes, replay implications, observability implications, compatibility risks, and unresolved questions.
 
-Current product boundaries support Python, LangGraph, and tool-calling agents first. Exact replay freezes recorded model and dependency outputs. Fork replay is planned, not implemented. The optional Go/Kafka/Collector path must not change replay semantics.
+Current product boundaries support Python, LangGraph, and tool-calling agents first. The core
+evidence/replay model remains framework-agnostic: LangGraph types, nodes, state, and callbacks stay
+behind a thin integration adapter, and a new framework must not require changes to core semantics.
+If LangGraph's API shape appears to require a core-only accommodation, stop and reconsider the
+adapter boundary. Exact replay freezes recorded model and dependency outputs. Fork replay is
+planned, not implemented. The optional Go/Kafka/Collector path must not change replay semantics.
 
 ## Security and Data Handling
 

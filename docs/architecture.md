@@ -8,8 +8,8 @@ Current component status:
 
 - **Implemented:** explicit controlled capture with best-effort redaction; Replay Capsule `0.1.0` and `0.2.0` sealing and validation; exact replay with recorded model, HTTP, and generic tool outcomes; deterministic observation comparison; separate regression evaluation; pytest export; CLI; local workbench and SQLite replay history.
 - **Implemented in the optional local distributed path:** Go ingestion, bounded enqueueing, Kafka transport, Python validation/assembly, SQLite event-ID deduplication and ordering, DLQ commit safety, sealed capsule output, W3C propagation, optional spans, and Prometheus metrics.
-- **Partial:** Python/LangGraph capture coverage. The repository has one bounded LangGraph adapter and a framework-independent tool dependency primitive, not arbitrary framework capture or a real-agent integration.
-- **Planned:** real-agent integration through the generic tool boundary, fork replay, fresh-model replay, richer graph/message/tool diff views, hosted trace search, and production infrastructure.
+- **Partial:** framework integration coverage. The repository has one bounded LangGraph adapter and framework-independent capture/dependency primitives, not arbitrary framework capture or a real-agent integration.
+- **Planned:** real-agent integration through the generic tool boundary, fork replay, fresh-model replay, richer portable event/message/dependency diff views, hosted trace search, and production infrastructure.
 
 The original spike avoided services and message queues. The optional v0.2 Go/Kafka path exists specifically to keep capture publishing off the primary application's synchronous request path; it is still a local development topology, not a production deployment claim.
 
@@ -21,7 +21,7 @@ The next approved milestones may expand around the same replay-first core:
 - A stable Replay Capsule schema with migration support.
 - A local CLI and library API.
 - A Python package/API that client applications can install locally.
-- Richer diff views for graph paths, messages, tool calls, and assertions.
+- Richer core diff views for portable execution events, messages, dependency calls, outputs, and assertions, with framework-specific presentation derived by adapters.
 - Test exporters for common Python test frameworks.
 - Optional storage, indexing, or team workflows only after real usage requires them.
 
@@ -29,22 +29,24 @@ The target architecture still remains distinct from a generic observability prod
 
 ## Partial: Capture
 
-Capture collects enough controlled data to seal and replay the tested examples without requiring live external dependencies. The current `CaptureSession` is explicit and framework-specific rather than magical or universal; a generic arbitrary-agent capture path is not implemented.
+Capture collects enough controlled data to seal and replay the tested examples without requiring live external dependencies. `CaptureSession` is explicit and framework-agnostic rather than magical or universal; framework adapters translate native lifecycle signals into its generic invocation, dependency, event, and observation inputs. A generic arbitrary-agent instrumentation path is not implemented.
 
 The implemented capsule/capture path can represent:
 
 - Initial user input and run configuration.
-- Graph or agent node metadata.
+- Portable subject and execution-event metadata supplied by an adapter.
 - Prompt and message state.
 - Model request metadata and captured responses.
 - Tool call names, arguments, ordering, and captured outputs.
-- Execution path and terminal state.
+- Ordered execution events and terminal state.
 - Errors and exceptions when relevant.
 - Redaction decisions or markers.
 
 ## Replay Capsule
 
 The Replay Capsule is the boundary between capture, replay, diff, and test export. It should be portable enough for offline tests, but not treated as a production telemetry format during the spike.
+
+The capsule may record a framework name as descriptive subject provenance, but its schema and semantics do not interpret graph, node, state-machine, or callback concepts. Framework adapters translate native concepts into the generic contract before capture.
 
 Capsules must not require `.env` files, live API credentials, or access to the original application repository secrets.
 
@@ -69,7 +71,7 @@ This is the baseline reproducibility check. If exact replay cannot reproduce the
 The feasibility implementation keeps extension points at the replay boundary rather than inside captured evidence:
 
 - `DependencyAdapter` supplies recorded external outcomes to subject code. The current implementation consumes model, HTTP, and tool fixtures in one sequence and fails closed; future dependency kinds belong behind this interface.
-- `FrameworkAdapter` invokes trusted local subject code with an injected dependency adapter. Framework-specific integrations belong here and must not mutate the capsule.
+- `FrameworkAdapter` invokes trusted local subject code with an injected dependency adapter. Framework-specific integrations belong here, translate native lifecycle data to generic TraceForge contracts, and must not mutate or reinterpret the capsule.
 - `CapsuleStore` owns local JSON loading and saving. Future storage implementations may change retrieval but must return the immutable captured document unchanged and must not rewrite evidence during reads.
 
 `RedactionScanner` remains the boundary for best-effort sanitization before persistence. `EventPublisher` now has direct and optional Kafka-backed consumers. Kafka carries mutable, retryable transport events; the SQLite assembler validates, orders, and deduplicates those events before the existing sealer creates evidence. Publishers and infrastructure must never modify, replace, or backfill a sealed capsule.
@@ -92,11 +94,18 @@ continues the application call normally, and rejects `finish()` with an unreplay
 Generic tool capture rejects custom session scanners before tool execution so replay identity does
 not depend on hidden runtime scanner configuration.
 
+LangGraph is only the first real integration proof. Core capture, capsule, dependency, sealing,
+validation, replay, regression, and future diff semantics must not import or interpret LangGraph
+types, `StateGraph`, node semantics, callbacks, or graph-state rules. A future framework should add
+a thin adapter and focused tests. If LangGraph's API shape appears to require a core change solely
+for LangGraph, implementation stops and the adapter boundary is reconsidered. See
+[ADR-0008](decisions/ADR-0008-framework-agnostic-core.md).
+
 ## Planned: Fork Replay
 
 Fork replay is not implemented in `v0.4.1`. The intended mode freezes tool outputs while allowing model or prompt behaviour to run again. This would isolate whether a prompt, graph, or model change behaves differently against the same external facts.
 
-The planned offline mode would use fake or recorded model adapters and recorded tool responses. It could validate replay-engine mechanics such as state reconstruction, graph path handling, tool-output injection, and diff generation.
+The planned offline mode would use fake or recorded model adapters and recorded tool responses. It could validate replay-engine mechanics such as portable observation reconstruction, ordered event handling, tool-output injection, and diff generation.
 
 A planned live fork experiment would use a real explicitly configured model with recorded tool outputs. It must be opt-in, may consume API quota, and must never run silently in default CI.
 
@@ -106,7 +115,7 @@ Live fork replay can be probabilistic because model generation may vary. Compari
 
 The current implementation deterministically compares captured and replay observations and exposes regression results. Richer diffing is planned at levels useful to a developer:
 
-- Node path and graph branches.
+- Portable ordered execution events and adapter-neutral branch/transition observations.
 - Tool choice and tool arguments.
 - Tool outputs shown to the model.
 - Model messages and final answer.
@@ -128,7 +137,7 @@ Deterministic checks are suitable for exact replay and frozen data:
 
 - Same captured tool output.
 - Same captured model output.
-- Same graph path under frozen responses.
+- Same portable execution-event sequence under frozen responses.
 - Same approved expected field or final output.
 
 Probabilistic checks are relevant to fork replay:
@@ -199,7 +208,7 @@ Cloud Kubernetes, SaaS authentication, and payments remain postponed. The local 
 
 ## Layering and Future Placement
 
-Immutable captured evidence belongs to the capsule/domain layer. Validation, sealing, replay, comparison, and regression evaluation may read it but must never repair or rewrite it. Future repair strategies may produce proposals or new derived artifacts only.
+Immutable captured evidence belongs to the capsule/domain layer. Validation, sealing, replay, comparison, regression evaluation, and the future core diff model may read only framework-neutral contracts and must never repair or rewrite evidence. Framework-specific views are adapter-side derivations. Future repair strategies may produce proposals or new derived artifacts only.
 
 The CLI and FastAPI dashboard are application interfaces over the same domain functions. Authentication belongs in API middleware. SQLite implements replay-history summaries plus local Kafka idempotency, assembly, and trace-correlation state without storing telemetry in or modifying capsule evidence; future databases belong behind storage interfaces. Kafka implements the optional `EventPublisher` transport boundary. Framework support belongs in optional adapters/plugins. Kubernetes and the bounded Terraform foundation remain deployment concerns and cannot change replay semantics.
 
@@ -208,7 +217,7 @@ See the responsibility-level [codebase map](codebase-map.md), operational [Kafka
 ## Open Questions
 
 - Which application-owned deterministic sanitizer is appropriate for the first real LangGraph tool arguments?
-- Which framework capture seam can support one real LangGraph application without implying arbitrary-agent compatibility?
+- Which thin LangGraph adapter seam can prove one real application without changing core semantics or implying arbitrary-agent compatibility?
 - How should a future fork replay identify probabilistic fresh-model execution in results and regression policy?
-- Which graph, message, and tool differences are portable enough to remain outside framework-specific capsule fields?
+- Which execution-event, message, dependency, and output differences are portable enough for the framework-neutral core diff model?
 - What pipeline reliability evidence is required before expanding the local single-broker, single-worker topology?

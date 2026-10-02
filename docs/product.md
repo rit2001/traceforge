@@ -17,6 +17,10 @@ tool result unchanged as JSON. If not, the application still receives the origin
 result, but the pending `CaptureSession` cannot produce a capsule draft. No generic result
 projection/sanitizer API exists in v0.5.
 
+TraceForge's evidence and replay semantics are framework-agnostic. LangGraph is the first real
+integration proof; its graph, node, state, and callback concepts are translated by an adapter and
+do not define the capture core, Replay Capsule, replay, regression, or future core diff model.
+
 ## Target Developer
 
 The initial target developer builds Python LangGraph or tool-calling agents locally and needs to debug a concrete failed run. They are comfortable reading traces, prompts, tool payloads, and test output. They want reproducible regression coverage before changing prompts, graph nodes, or tool adapters.
@@ -40,13 +44,13 @@ It does not initially target infrastructure outages, fleet observability, cost a
 A Replay Capsule is a local artifact that freezes the information needed to replay and compare a specific agent execution. For the feasibility spike, a capsule should include:
 
 - Invocation input.
-- Agent and graph metadata.
+- Subject application and descriptive framework provenance.
 - Prompt and message history relevant to the run.
 - Model request metadata.
 - Captured model outputs.
 - Tool call names, arguments, and call order.
 - Captured tool outputs.
-- Execution path and node transitions.
+- Ordered, framework-neutral execution events.
 - Timestamps or ordering metadata where needed for comparison.
 - Redaction metadata for sensitive fields.
 

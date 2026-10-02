@@ -27,13 +27,14 @@ This milestone does not include fork replay, a generic capture SDK, production d
 
 ## v0.5.0 — Real Agent Capture
 
-Primary goal: prove TraceForge against one real, sanitized LangGraph agent application without broadening the product boundary prematurely.
+Primary goal: prove TraceForge against one real, sanitized LangGraph agent application through a
+thin adapter without making LangGraph the evidence or replay model.
 
 Planned work:
 
 - stabilize the capture API around the evidence needed by replay;
 - integrate one real LangGraph application using sanitized data;
-- strengthen framework capture while preserving explicit boundaries;
+- prove framework-native translation at the adapter while keeping capture core framework-agnostic;
 - define and implement a generic tool dependency contract;
 - connect `CaptureSession` to the event transport in an intentional integration path;
 - introduce a richer, reviewable execution diff; and
@@ -44,7 +45,9 @@ adds ordered tool records, fail-closed sanitized identity, successful recorded r
 bounded safe failure mapping while retaining `0.1.0`. The real sanitized LangGraph application,
 transport integration, richer execution diff, and tutorial remain milestone work.
 
-Exit evidence should include an offline, sanitized capture → seal → exact replay → regression path for the selected application. This is not a claim of arbitrary Python or LangGraph support.
+Exit evidence should include an offline, sanitized capture → seal → exact replay → regression path
+for the selected application without LangGraph types or semantics entering core contracts. This is
+not a claim of arbitrary Python or LangGraph support.
 
 ## v0.6.0 — Fork Replay
 
@@ -55,7 +58,8 @@ Planned work:
 - specify and implement fork replay semantics;
 - freeze recorded tool and dependency outcomes;
 - make fresh-model execution explicit, opt-in, and excluded from default CI;
-- compare messages, tool calls, graph nodes, and execution paths;
+- compare portable messages, dependency calls, execution events, and outputs in the core, with any
+  framework-specific view derived by its adapter;
 - improve replay comparison output; and
 - define a proposal/review workflow for regression expectations.
 
@@ -105,7 +109,8 @@ Cloud deployment, high availability, multi-tenancy, authentication, distributed 
 ## Open Questions
 
 - What is the smallest generic dependency contract that supports tool-calling agents without hiding side effects?
-- Which LangGraph integration seam can remain stable without claiming universal framework coverage?
+- Which thin LangGraph adapter seam can remain stable without changing framework-neutral core
+  semantics or claiming universal framework coverage?
 - How should fork replay make probabilistic fresh-model execution visible in results and CI policy?
 - Which execution differences are useful enough to review without coupling the capsule to one framework?
 - What operational evidence is required before expanding the local Kafka topology?

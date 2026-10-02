@@ -87,6 +87,8 @@ See [codebase-map.md](codebase-map.md) for inputs, outputs, invariants, extensio
 - The immutable-evidence boundary, capsule canonicalization, fingerprint, or integrity scope.
 - Exact replay's frozen-output and fail-closed guarantees.
 - Separation of original evidence from regression expectations and telemetry correlation.
+- Framework-agnostic capture, capsule, dependency, replay, regression, and core diff semantics;
+  LangGraph-specific translation stays behind an adapter.
 - Capture-event ordering, `capture_id` keying, `event_id` idempotency, or at-least-once semantics.
 - Local/offline defaults, trust boundaries, secret rules, or developer approval for generated assertions.
 - Service ownership or an accepted ADR without a superseding ADR.
