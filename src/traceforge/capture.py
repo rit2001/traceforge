@@ -11,6 +11,14 @@ from time import monotonic_ns
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+from traceforge.canonical import canonicalize
+from traceforge.exceptions import (
+    SemanticValidationError,
+    UnreplayableCaptureError,
+    UnsafeToolArgumentsError,
+    recorded_tool_exception_type,
+)
+
 SENSITIVE_NAMES = {
     "api-key",
     "api_key",
@@ -102,6 +110,50 @@ class BestEffortRedactionScanner:
 
 
 Executor = Callable[[Any], dict[str, Any]]
+ToolExecutor = Callable[[Any], Any]
+ToolArgumentSanitizer = Callable[[Any], Any]
+
+
+def sanitize_tool_arguments(
+    arguments: Any,
+    *,
+    scanner: BestEffortRedactionScanner | None = None,
+    sanitizer: ToolArgumentSanitizer | None = None,
+    path: str = "$.tool.arguments",
+) -> ScanResult:
+    """Return safe identity-bearing arguments or reject before tool execution."""
+    active_scanner = scanner or BestEffortRedactionScanner()
+    if sanitizer is None:
+        scanned = active_scanner.scan(arguments, path)
+        if scanned.actions:
+            raise UnsafeToolArgumentsError(
+                "tool arguments require an explicit deterministic sanitizer before tool execution "
+                "because default redaction would change request identity"
+            )
+        canonicalize(scanned.value)
+        return scanned
+
+    try:
+        first = deepcopy(sanitizer(deepcopy(arguments)))
+        first_canonical = canonicalize(first)
+        second = deepcopy(sanitizer(deepcopy(arguments)))
+        second_canonical = canonicalize(second)
+    except Exception as exc:
+        raise UnsafeToolArgumentsError("tool argument deterministic sanitizer failed") from exc
+    if first_canonical != second_canonical:
+        raise UnsafeToolArgumentsError(
+            "tool argument deterministic sanitizer returned different identities for the same input"
+        )
+
+    scanned = active_scanner.scan(first, path)
+    if scanned.actions:
+        raise UnsafeToolArgumentsError(
+            "tool argument deterministic sanitizer left values requiring generic redaction"
+        )
+    actions: tuple[dict[str, str], ...] = ()
+    if first != arguments:
+        actions = ({"path": path, "action": "pseudonymized"},)
+    return ScanResult(scanned.value, actions)
 
 
 class CaptureSession:
@@ -117,15 +169,18 @@ class CaptureSession:
         subject: dict[str, str],
         operation: str,
         invocation_input: Any,
+        schema_version: str = "0.1.0",
         scanner: BestEffortRedactionScanner | None = None,
         recorded_at: str | None = None,
     ) -> None:
         self.scanner = scanner or BestEffortRedactionScanner()
+        self._uses_standard_tool_scanner = type(self.scanner) is BestEffortRedactionScanner
+        self._tool_result_prevents_exact_replay = False
         self._actions: list[dict[str, str]] = []
         self._dependencies: list[dict[str, Any]] = []
         self._events: list[dict[str, Any]] = []
         self._base = {
-            "schema_version": "0.1.0",
+            "schema_version": schema_version,
             "capsule_id": capsule_id,
             "capture": {
                 "run_id": run_id,
@@ -190,6 +245,93 @@ class CaptureSession:
     ) -> dict[str, Any]:
         return self._record_dependency("http", operation, request, executor)
 
+    def record_tool(
+        self,
+        operation: str,
+        arguments: Any,
+        executor: ToolExecutor,
+        *,
+        sanitizer: ToolArgumentSanitizer | None = None,
+    ) -> Any:
+        """Execute one live tool, recording a safe result or re-raised failure."""
+        if self._base["schema_version"] != "0.2.0":
+            raise SemanticValidationError(
+                "generic tool dependencies require Replay Capsule schema_version '0.2.0'"
+            )
+        if not isinstance(operation, str) or not operation:
+            raise SemanticValidationError(
+                "tool operation must be a non-empty stable logical identity"
+            )
+        if not self._uses_standard_tool_scanner:
+            raise SemanticValidationError(
+                "generic tool capture requires the standard scanner contract"
+            )
+        sequence = len(self._dependencies) + 1
+        request_path = f"$.dependencies[{sequence - 1}].request.arguments"
+        scanned_arguments = sanitize_tool_arguments(
+            arguments,
+            scanner=self.scanner,
+            sanitizer=sanitizer,
+            path=request_path,
+        )
+        self._actions.extend(scanned_arguments.actions)
+        started = monotonic_ns()
+        try:
+            result = executor(deepcopy(arguments))
+        except Exception as exc:
+            outcome = {
+                "status": "errored",
+                "error": self._scan(
+                    {
+                        "type": recorded_tool_exception_type(exc),
+                        "message": str(exc),
+                        "data": None,
+                    },
+                    f"$.dependencies[{sequence - 1}].outcome.error",
+                ),
+            }
+            self._dependencies.append(
+                {
+                    "dependency_id": f"dependency-{sequence}",
+                    "sequence": sequence,
+                    "kind": "tool",
+                    "operation": operation,
+                    "request": {"arguments": scanned_arguments.value},
+                    "outcome": outcome,
+                    "duration_ms": max(0, (monotonic_ns() - started) // 1_000_000),
+                }
+            )
+            raise
+
+        result_path = f"$.dependencies[{sequence - 1}].outcome.response.result"
+        try:
+            scanned_result = self.scanner.scan(result, result_path)
+            result_is_unchanged = not scanned_result.actions and canonicalize(
+                result
+            ) == canonicalize(scanned_result.value)
+        except Exception:
+            result_is_unchanged = False
+        if not result_is_unchanged:
+            self._tool_result_prevents_exact_replay = True
+            return result
+
+        outcome = {
+            "status": "returned",
+            "response": {"result": scanned_result.value},
+        }
+        self._dependencies.append(
+            {
+                "dependency_id": f"dependency-{sequence}",
+                "sequence": sequence,
+                "kind": "tool",
+                "operation": operation,
+                "request": {"arguments": scanned_arguments.value},
+                "outcome": outcome,
+                "duration_ms": max(0, (monotonic_ns() - started) // 1_000_000),
+            }
+        )
+        return result
+
     def record_event(self, kind: str, name: str, data: Any) -> None:
         sequence = len(self._events) + 1
         self._events.append(
@@ -204,6 +346,11 @@ class CaptureSession:
 
     def finish(self, execution_status: str, output: Any, error: Any = None) -> dict[str, Any]:
         """Return an unsealed sanitized draft; fingerprints are intentionally absent."""
+        if self._tool_result_prevents_exact_replay:
+            raise UnreplayableCaptureError(
+                "capture cannot produce exact-replay evidence because a successful tool result "
+                "could not be persisted unchanged"
+            )
         draft = deepcopy(self._base)
         draft["dependencies"] = deepcopy(self._dependencies)
         draft["original_observation"] = {

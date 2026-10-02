@@ -8,9 +8,12 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
 
 ## Current Verified Capabilities
 
-- Replay Capsule v0 (`0.1.0`) structural and semantic validation, RFC 8785 canonicalization, SHA-256 request fingerprints, and sealing.
+- Replay Capsule `0.1.0` compatibility plus successor `0.2.0` structural and semantic validation, RFC 8785 canonicalization, SHA-256 request fingerprints, and sealing.
 - Best-effort capture/redaction for Python plus a controlled optional LangGraph adapter.
-- Exact offline replay with recorded model and HTTP outcomes, sequential request matching, fail-closed fixtures, a process-wide network guard, deterministic comparison, regression evaluation, and pytest export.
+- One separately maintained Agentic-chatbot integration proves the editable package/API boundary,
+  real ordered ChatGroq/Tavily capture, persisted exact replay with both live callables disabled,
+  fail-closed changed requests, and external regression evaluation.
+- Exact offline replay with recorded model, HTTP, and generic tool outcomes, global sequential request matching, fail-closed fixtures, a process-wide network guard, deterministic comparison, regression evaluation, and pytest export.
 - Controlled weather, RAG citation-grounding, and tool-argument-safety examples.
 - Local FastAPI dashboard with allow-listed runners and SQLite replay history.
 - Optional local distributed ingestion: Go HTTP gateway, bounded asynchronous Kafka publishing, at-least-once Python consumption, SQLite ordering/idempotency, DLQ handling, capsule assembly, and sealing.
@@ -23,11 +26,17 @@ Only the executed evidence in [docs/verification-ledger.md](docs/verification-le
 
 ## Explicit Non-Capabilities
 
-TraceForge does not currently provide fork replay, live replay, production capture integration, broad framework support, hosted storage, authentication, multi-tenancy, production operations, automatic repair, cloud/production Kubernetes or Terraform, ClickHouse, SaaS billing, or a production security guarantee. The local kind/Terraform gates are not evidence of high availability, scale, cloud compatibility, or security. They make no adoption, benchmark, reliability, or hallucination-elimination claim.
+TraceForge does not currently provide fork replay, live replay, arbitrary or production-wide capture instrumentation, broad framework support, hosted storage, authentication, multi-tenancy, production operations, automatic repair, cloud/production Kubernetes or Terraform, ClickHouse, SaaS billing, or a production security guarantee. The single real-agent proof and local kind/Terraform gates are not evidence of high availability, scale, cloud compatibility, or security. They make no adoption, benchmark, reliability, or hallucination-elimination claim.
 
 ## Architectural Invariants
 
 - Python, LangGraph, and tool-calling agents are the first supported product boundary.
+- TraceForge's capture core, Replay Capsule contracts, dependency contract, sealing, validation,
+  replay, regression, and future core diff semantics are framework-agnostic. LangGraph is the first
+  integration proof and all LangGraph translation remains behind a thin adapter boundary.
+- Core semantics never interpret LangGraph types, `StateGraph`, node semantics, callbacks, or graph
+  state. If LangGraph's API shape appears to require a core change solely for LangGraph, stop and
+  reconsider the boundary rather than coupling the core.
 - Initial execution and default tests are local and offline.
 - Replay, evidence integrity, and approved regression export remain the product center.
 - Core imports do not require optional framework, dashboard, Kafka, or telemetry dependencies.
@@ -46,7 +55,7 @@ Architecture detail belongs in [docs/architecture.md](docs/architecture.md), and
 - Regression specifications and generated tests remain separate from original evidence and require developer approval.
 - Telemetry correlation, replay history, and assembly state are operational data in SQLite or telemetry systems, never capsule fields.
 
-The normative format and integrity rules are in [docs/contracts/replay-capsule-v0.md](docs/contracts/replay-capsule-v0.md) and [ADR-0002](docs/decisions/ADR-0002-replay-capsule-v0-format.md).
+The normative format and integrity rules are in [the `0.1.0` contract](docs/contracts/replay-capsule-v0.md), [the `0.2.0` contract](docs/contracts/replay-capsule-v0.2.md), [ADR-0002](docs/decisions/ADR-0002-replay-capsule-v0-format.md), and [ADR-0007](docs/decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md).
 
 ## Replay Guarantees and Non-Guarantees
 
@@ -91,20 +100,33 @@ The canonical security model is [docs/security.md](docs/security.md); vulnerabil
 - [ADR-0004](docs/decisions/ADR-0004-repository-memory-and-navigation.md): mandatory repository memory, authority routing, evidence ledger, and contributor update contract.
 - [ADR-0005](docs/decisions/ADR-0005-local-kubernetes-kind-deployment.md): native-Kustomize local kind topology, container security, PVC persistence, automation, and claim boundaries.
 - [ADR-0006](docs/decisions/ADR-0006-terraform-kustomize-ownership.md): local Terraform foundation, state boundary, and disjoint Terraform/Kustomize ownership.
+- [ADR-0007](docs/decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md): Replay Capsule `0.2.0`, generic ordered tool dependencies, safe request identity, and bounded failure replay.
+- [ADR-0008](docs/decisions/ADR-0008-framework-agnostic-core.md): framework-agnostic evidence,
+  replay, regression, and diff semantics with framework-specific translation confined to adapters.
 
 ADRs are historical records. Supersede them with a new ADR; do not silently rewrite accepted decisions.
 
 ## Current Branch, Milestone, and Limitations
 
 - Documented branch: `main`; retained branch `release/v0.4.1` and tag `v0.4.1` identify the verified release commit.
-- Current milestone: Public Beta `v0.4.1` is published without changing Replay Capsule `0.1.0`, Capture Event `0.2.0`, exact-replay semantics, or infrastructure ownership.
-- Known limitations: no fork/live replay; no production client integration; redaction is best effort; the replay network guard is process-wide; transport is at least once; local SQLite is single writer and not a distributed store; Kafka is ephemeral in kind; the RWO PVC is deleted with the cluster; local Terraform state is ignored and has no remote encryption/locking/backup; concurrent host inspection of a live worker WAL is unsupported; kind, Terraform, and the Collector topology are local development only.
+- Current milestone: `v0.5.0 — Real Agent Capture` is active; the generic Replay Capsule `0.2.0`
+  tool boundary and one separate real Agentic-chatbot integration are implemented for review while
+  `0.1.0` remains unchanged. Structured diff is not implemented.
+- Known limitations: only one application-owned real-agent integration exists; tool results that require
+  sanitization make the pending capture ineligible for an exact-replay draft while the application
+  still receives its original result; generic tool capture requires the standard scanner; only
+  `TimeoutError` has approved concrete tool-failure reconstruction; no fork/live replay; redaction
+  remains best effort; the replay network guard is process-wide; transport is at least once; local
+  SQLite is single writer; and kind, Terraform, and the Collector topology are local development
+  only.
 
 Live branch, milestone, blockers, and assumptions belong in [docs/project-state.md](docs/project-state.md), not in this summary.
 
 ## Exact Next Approved Milestone
 
-The next product milestone is `v0.5.0 — Real Agent Capture`: prove one real sanitized LangGraph application against the replay-first path. Implementation requires a separately approved scoped task.
+After review of the real-agent integration, the next approved v0.5.0 slice is Issue #3: define and
+test a framework-neutral structured comparison over portable observations, ordered dependencies,
+events, and outputs. Framework-specific presentation remains adapter-side.
 
 ## Required Reading Order
 

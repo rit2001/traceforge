@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from importlib import import_module
 from typing import Any
 
-from traceforge.dependencies import RecordedDependencyAdapter
+from traceforge.dependencies import RecordedDependencyAdapter, assert_replayable_tool_failures
 from traceforge.exceptions import SemanticValidationError
 from traceforge.interfaces import DependencyAdapter, FrameworkAdapter
 from traceforge.metrics import replay as record_replay
@@ -101,6 +101,7 @@ def _replay_exact(
 ) -> ReplayResult:
     validate_capsule(capsule)
     original_observation = deepcopy(capsule["original_observation"])
+    assert_replayable_tool_failures(capsule["dependencies"])
     dependencies = RecordedDependencyAdapter(capsule["dependencies"])
 
     with block_network():

@@ -1,0 +1,359 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:traceforge:schema:replay-capsule:0.2.0",
+  "title": "TraceForge Replay Capsule 0.2",
+  "description": "Structural schema for a sanitized Replay Capsule version 0.2.0 with globally ordered model, HTTP, and tool dependencies.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "capsule_id",
+    "capture",
+    "producer",
+    "subject",
+    "invocation",
+    "dependencies",
+    "original_observation",
+    "redaction",
+    "integrity"
+  ],
+  "properties": {
+    "schema_version": { "const": "0.2.0" },
+    "capsule_id": { "$ref": "#/$defs/capsuleId" },
+    "capture": { "$ref": "#/$defs/capture" },
+    "producer": { "$ref": "#/$defs/producer" },
+    "subject": { "$ref": "#/$defs/subject" },
+    "invocation": { "$ref": "#/$defs/invocation" },
+    "dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dependency" }
+    },
+    "original_observation": { "$ref": "#/$defs/originalObservation" },
+    "redaction": { "$ref": "#/$defs/redaction" },
+    "integrity": { "$ref": "#/$defs/integrity" }
+  },
+  "$defs": {
+    "jsonValue": {
+      "description": "An arbitrary sanitized external payload value.",
+      "type": ["object", "array", "string", "number", "integer", "boolean", "null"]
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "capsuleId": { "$ref": "#/$defs/identifier" },
+    "runId": { "$ref": "#/$defs/identifier" },
+    "dependencyId": { "$ref": "#/$defs/identifier" },
+    "eventId": { "$ref": "#/$defs/identifier" },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "kind", "recorded_at"],
+      "properties": {
+        "run_id": { "$ref": "#/$defs/runId" },
+        "kind": { "enum": ["controlled_fixture", "captured_run"] },
+        "recorded_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["application", "revision", "framework", "language"],
+      "properties": {
+        "application": { "type": "string", "minLength": 1 },
+        "revision": { "type": "string", "minLength": 1 },
+        "framework": { "type": "string", "minLength": 1 },
+        "language": { "type": "string", "minLength": 1 }
+      }
+    },
+    "invocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "input"],
+      "properties": {
+        "operation": { "type": "string", "minLength": 1 },
+        "input": { "$ref": "#/$defs/jsonValue" }
+      }
+    },
+    "dependency": {
+      "oneOf": [
+        { "$ref": "#/$defs/modelDependency" },
+        { "$ref": "#/$defs/httpDependency" },
+        { "$ref": "#/$defs/toolDependency" }
+      ]
+    },
+    "modelDependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependency_id",
+        "sequence",
+        "kind",
+        "operation",
+        "request",
+        "request_fingerprint",
+        "outcome",
+        "duration_ms"
+      ],
+      "properties": {
+        "dependency_id": { "$ref": "#/$defs/dependencyId" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "kind": { "const": "model" },
+        "operation": { "type": "string", "minLength": 1 },
+        "request": { "$ref": "#/$defs/modelRequest" },
+        "request_fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "outcome": { "$ref": "#/$defs/modelOutcome" },
+        "duration_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "modelRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "payload"],
+      "properties": {
+        "model": { "type": "string", "minLength": 1 },
+        "payload": { "$ref": "#/$defs/jsonValue" }
+      }
+    },
+    "modelOutcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "response"],
+          "properties": {
+            "status": { "const": "returned" },
+            "response": { "$ref": "#/$defs/modelResponse" }
+          }
+        },
+        { "$ref": "#/$defs/erroredOutcome" }
+      ]
+    },
+    "modelResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["payload"],
+      "properties": {
+        "payload": { "$ref": "#/$defs/jsonValue" }
+      }
+    },
+    "httpDependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependency_id",
+        "sequence",
+        "kind",
+        "operation",
+        "request",
+        "request_fingerprint",
+        "outcome",
+        "duration_ms"
+      ],
+      "properties": {
+        "dependency_id": { "$ref": "#/$defs/dependencyId" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "kind": { "const": "http" },
+        "operation": { "type": "string", "minLength": 1 },
+        "request": { "$ref": "#/$defs/httpRequest" },
+        "request_fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "outcome": { "$ref": "#/$defs/httpOutcome" },
+        "duration_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "httpRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "url", "headers", "body"],
+      "properties": {
+        "method": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "minLength": 1 },
+        "headers": { "$ref": "#/$defs/safeHttpHeaders" },
+        "body": { "$ref": "#/$defs/jsonValue" }
+      }
+    },
+    "httpOutcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "response"],
+          "properties": {
+            "status": { "const": "returned" },
+            "response": { "$ref": "#/$defs/httpResponse" }
+          }
+        },
+        { "$ref": "#/$defs/erroredOutcome" }
+      ]
+    },
+    "httpResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status_code", "headers", "body"],
+      "properties": {
+        "status_code": { "type": "integer", "minimum": 100, "maximum": 599 },
+        "headers": { "$ref": "#/$defs/safeHttpHeaders" },
+        "body": { "$ref": "#/$defs/jsonValue" }
+      }
+    },
+    "safeHttpHeaders": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "content-type": { "type": "string", "minLength": 1 }
+      }
+    },
+    "toolDependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependency_id",
+        "sequence",
+        "kind",
+        "operation",
+        "request",
+        "request_fingerprint",
+        "outcome",
+        "duration_ms"
+      ],
+      "properties": {
+        "dependency_id": { "$ref": "#/$defs/dependencyId" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "kind": { "const": "tool" },
+        "operation": { "type": "string", "minLength": 1 },
+        "request": { "$ref": "#/$defs/toolRequest" },
+        "request_fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "outcome": { "$ref": "#/$defs/toolOutcome" },
+        "duration_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "toolRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["arguments"],
+      "properties": {
+        "arguments": { "$ref": "#/$defs/jsonValue" }
+      }
+    },
+    "toolOutcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "response"],
+          "properties": {
+            "status": { "const": "returned" },
+            "response": { "$ref": "#/$defs/toolResponse" }
+          }
+        },
+        { "$ref": "#/$defs/erroredOutcome" }
+      ]
+    },
+    "toolResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result"],
+      "properties": {
+        "result": { "$ref": "#/$defs/jsonValue" }
+      }
+    },
+    "erroredOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "error"],
+      "properties": {
+        "status": { "const": "errored" },
+        "error": { "$ref": "#/$defs/errorRecord" }
+      }
+    },
+    "errorRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "message", "data"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "message": { "type": "string" },
+        "data": { "$ref": "#/$defs/jsonValue" }
+      }
+    },
+    "originalObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["execution_status", "events", "output", "error"],
+      "properties": {
+        "execution_status": { "enum": ["completed", "errored", "cancelled"] },
+        "events": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/internalEvent" }
+        },
+        "output": { "$ref": "#/$defs/jsonValue" },
+        "error": {
+          "oneOf": [
+            { "$ref": "#/$defs/errorRecord" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "internalEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_id", "sequence", "kind", "name", "data"],
+      "properties": {
+        "event_id": { "$ref": "#/$defs/eventId" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "data": { "$ref": "#/$defs/jsonValue" }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_version", "actions", "scan_result"],
+      "properties": {
+        "policy_version": { "type": "string", "minLength": 1 },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/redactionAction" }
+        },
+        "scan_result": { "const": "passed" }
+      }
+    },
+    "redactionAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "action"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "action": { "enum": ["removed", "masked", "pseudonymized"] }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "canonicalization", "scope", "digest"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "canonicalization": { "const": "RFC8785" },
+        "scope": { "const": "entire_capsule_except_integrity.digest" },
+        "digest": { "$ref": "#/$defs/fingerprint" }
+      }
+    }
+  }
+}

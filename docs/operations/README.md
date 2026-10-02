@@ -34,7 +34,27 @@ Ordinary `down` preserves the Kafka named volume and host-visible data directory
 | Collector unavailable, spans missing, trace link missing, metrics questions | [Observability](observability.md) |
 | kind cluster, Kustomize, image loading, pod recovery, or PVC persistence | [Local Kubernetes](kubernetes.md) |
 | Terraform plan/state/drift/destroy or foundation ownership | [Local Terraform](terraform.md) |
+| Tool capture rejects sensitive arguments or replay rejects an exception type | [Tool-boundary failures](#tool-boundary-failures) |
 | SQLite bind-mount warning | [SQLite bind-mount warning](#sqlite-bind-mount-warning) |
+
+## Tool-Boundary Failures
+
+If tool capture reports that redaction would change request identity, do not disable the check or
+persist the raw value. Remove non-semantic credentials before the boundary, or provide a reviewed
+application-owned deterministic sanitizer that maps identity-bearing data to stable safe JSON.
+Use the same sanitizer during capture and replay, and verify distinct meaningful inputs retain
+distinct fingerprints.
+
+If exact replay rejects an unsupported recorded tool exception type, the runner has not executed.
+Do not import a class named by capsule evidence or replace it with a generic catchable error. Add a
+new allow-listed mapping only through a reviewed contract change with a control-flow test, or treat
+that recorded failure as not exactly replayable by the current version.
+
+If `CaptureSession.finish()` raises `UnreplayableCaptureError`, a live tool already returned a
+result that the standard scanner could not persist unchanged. The application received that result
+normally, but no legal exact-replay draft exists. Do not recover by storing the raw or transformed
+result, and do not treat the condition as a tool failure. Discard the pending capture. A future
+result-projection contract requires a separate reviewed decision.
 
 ## SQLite Bind-Mount Warning
 

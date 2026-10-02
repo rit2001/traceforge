@@ -1,6 +1,6 @@
 # Project State
 
-Last verified date: 2026-08-21.
+Last verified date: 2026-10-02.
 
 ## Current Phase
 
@@ -8,7 +8,11 @@ The replay feasibility implementation, optional local distributed-ingestion and 
 
 ## Current Milestone
 
-Public Beta `v0.4.1` is published. No post-release implementation milestone is active.
+`v0.5.0 — Real Agent Capture` is active. Issue #2's generic tool dependency primitive and Issue
+#1's separate real Agentic-chatbot integration are implemented in their review worktrees. The real
+integration consumes TraceForge through an editable package boundary, captures an actual ordered
+model → tool → model execution as Replay Capsule `0.2.0`, and replays it with both live providers
+replaced by sentinels. Structured execution diff remains the next unimplemented slice.
 
 The release aligned package, CLI, Docker, CI, public documentation, license, contributor framework, artifacts, installation, localhost workbench, Kafka topic configuration, and bounded publication-safety surfaces. It did not redesign replay semantics, implement fork replay, or add production-readiness claims.
 
@@ -25,14 +29,20 @@ The release aligned package, CLI, Docker, CI, public documentation, license, con
 - Local Kubernetes v0.3: the existing Go gateway, Apache Kafka development broker, Python worker, API/dashboard, and OpenTelemetry Collector became Ready on a dedicated kind cluster. A real capture sealed and validated, exact offline replay/regression passed, duplicate delivery remained idempotent, malformed input was rejected before enqueue, cross-service capture spans and the replay link passed, an API pod was recreated, worker replacement preserved the unchanged capsule on the RWO PVC, and application UID/GID checks returned 10001. The cluster was deleted after evidence capture. See the verification ledger for exact commands and limitations.
 - Terraform foundation v0.4: the official pinned Kubernetes provider created and tracked the `traceforge` Namespace, ResourceQuota, LimitRange, and five token-less dedicated ServiceAccounts. The Terraform-backed overlay delivered the unchanged workloads; the full v0.3 smoke passed. Zero drift, controlled label drift (detailed exit 2), reconciliation, a following zero-drift plan, ordered application deletion, eight-resource destroy, empty state, namespace removal, and dedicated-cluster removal were observed. See ADR-0006 and the verification ledger.
 - Public release candidate v0.4.1: distribution/package/CLI/Docker metadata, release artifacts, public landing documentation, named offline CI jobs, clean-wheel installation, generated regression execution, localhost-only dashboard verification, and a bounded redacted all-branch Git-history audit were completed without changing schema versions or infrastructure ownership. See the release notes and verification ledger.
+- v0.5 Issue #1 real-agent proof: the separate clean Agentic-chatbot worktree installed TraceForge
+  through an editable package boundary, executed real ChatGroq and Tavily calls through its
+  production LangGraph route, sealed and validated ordered model → tool → model evidence, replayed
+  a persisted capsule in a fresh process with both live callables replaced by sentinels, rejected
+  changed model and tool requests, and passed an external regression specification. The temporary
+  live capsule was reviewed but was not added to this repository.
 
 ## Repository Status
 
-Documentation, both structural schemas, the `traceforge-replay` distribution, controlled local replay artifacts, focused tests, an optional Kafka worker, and a Go ingestion gateway exist.
+Documentation, Replay Capsule `0.1.0` and `0.2.0` schemas, the Capture Event schema, the `traceforge-replay` distribution, controlled local replay artifacts, focused tests, an optional Kafka worker, and a Go ingestion gateway exist.
 
 The documented release state is on `main`; retained branch `release/v0.4.1` and tag `v0.4.1` point to the verified release commit.
 
-The `traceforge-replay` distribution and `traceforge` package/CLI are prepared as software release candidate `0.4.1`; Replay Capsule `0.1.0` and Capture Event `0.2.0` remain independent contracts. The package provides capture with best-effort redaction, sealing, validation, exact replay, deterministic comparison, regression evaluation/export, one optional LangGraph adapter, Kafka assembly commands, and a local dashboard. The optional local distributed path provides HTTP ingestion, Kafka transport, SQLite idempotency/assembly, Prometheus metrics, and opt-in OTLP tracing. Native manifests and kind overlays deploy those same containers locally. Terraform can manage only the local Kubernetes foundation. No fork replay, live replay, production capture integration, hosted service, authentication, cloud/production Kubernetes, or cloud Terraform exists.
+The published distribution remains `0.4.1`; Replay Capsule versions and Capture Event `0.2.0` are independent contracts. The working tree supports explicit validation/replay dispatch for Replay Capsule `0.1.0` and `0.2.0`. `0.2.0` adds generic ordered tool capture/replay with reject-by-default sensitive request identity and a bounded `TimeoutError` replay mapping. One separate real application now proves the package/API seam, but TraceForge still has no arbitrary LangGraph instrumentation, fork replay, live replay, hosted service, authentication, cloud/production Kubernetes, or cloud Terraform.
 
 ## Confirmed Decisions
 
@@ -49,6 +59,10 @@ The `traceforge-replay` distribution and `traceforge` package/CLI are prepared a
 - `PROJECT_MEMORY.md` is the mandatory long-term entry point; detailed status, decisions, evidence, ownership, and runbooks retain separate canonical owners under ADR-0004.
 - The local Kubernetes gate uses native manifests and Kustomize, one dedicated kind cluster, no public LoadBalancer, and the persistence/security boundaries accepted in ADR-0005.
 - Terraform owns only the Namespace, ResourceQuota, LimitRange, dedicated ServiceAccounts, labels, and outputs; Kustomize owns all workloads, Services, ConfigMaps, PVC/application data, and Pod configuration under ADR-0006.
+- Replay Capsule `0.1.0` remains immutable; `0.2.0` adds generic tool dependencies and explicit version dispatch under ADR-0007.
+- TraceForge's capture core, capsule/dependency contracts, sealing, validation, replay, regression,
+  and future core diff semantics remain framework-agnostic under ADR-0008. LangGraph is the first
+  integration proof and must stay behind a thin adapter boundary.
 
 ## Current Assumptions
 
@@ -59,8 +73,10 @@ The `traceforge-replay` distribution and `traceforge` package/CLI are prepared a
 
 ## Known Blockers and Open Questions
 
-- A stable generic real-agent capture boundary is not defined.
-- A generic tool dependency contract is not defined.
+- The first application-owned facade is proven for one synchronous LangGraph route, but it is not a
+  universal instrumentation API or evidence of compatibility with unrelated graph shapes.
+- Tool results requiring transformation cannot become v0.5 exact-replay evidence; no generic
+  application-owned result sanitizer/projection contract exists.
 - Fork replay and richer graph/message/tool diff semantics are not defined in executable code.
 - Sanitization remains best effort and still requires human review before fixtures are shared.
 - Concurrent host-side inspection of the worker's bind-mounted SQLite WAL is unsupported on Docker Desktop; use a service-owned reader or inspect after shutdown.
@@ -72,7 +88,10 @@ Cloud Terraform, remote production state, cloud/production Kubernetes, Helm, ope
 
 ## Exact Next Approved Task
 
-The next product milestone is `v0.5.0 — Real Agent Capture`: prove one real sanitized LangGraph application against the replay-first path. Implementation requires a separately approved scoped task; no `v0.5.0` implementation is active.
+After human review of Issue #1, begin Issue #3 with failing offline tests for a portable structured
+comparison of generic observations, ordered dependencies, events, and outputs. Keep any LangGraph
+message/node presentation in the application adapter; the core diff must not interpret framework
+types or lifecycle semantics.
 
 ## Milestone-Boundary Checklist
 

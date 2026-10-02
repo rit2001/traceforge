@@ -9,14 +9,15 @@ from traceforge.canonical import capsule_integrity_digest, request_fingerprint
 from traceforge.exceptions import IntegrityError, SemanticValidationError
 from traceforge.schema import validate_structure
 
-SUPPORTED_SCHEMA_VERSION = "0.1.0"
+SUPPORTED_SCHEMA_VERSIONS = frozenset({"0.1.0", "0.2.0"})
 
 
 def _validate_supported_version(capsule: Mapping[str, Any]) -> None:
     version = capsule.get("schema_version")
-    if version is not None and version != SUPPORTED_SCHEMA_VERSION:
+    if version is not None and version not in SUPPORTED_SCHEMA_VERSIONS:
         raise SemanticValidationError(
-            f"unsupported schema_version {version!r}; expected {SUPPORTED_SCHEMA_VERSION!r}"
+            f"unsupported schema_version {version!r}; "
+            f"expected one of {sorted(SUPPORTED_SCHEMA_VERSIONS)!r}"
         )
 
 

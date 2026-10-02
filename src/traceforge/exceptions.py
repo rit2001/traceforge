@@ -35,3 +35,26 @@ class UnexpectedDependencyError(TraceForgeError):
 
 class LiveDependencyBlockedError(TraceForgeError):
     """Subject code attempted network access during exact replay."""
+
+
+class UnsafeToolArgumentsError(TraceForgeError):
+    """Tool arguments cannot be persisted without risking request-identity collapse."""
+
+
+class UnsupportedToolFailureError(TraceForgeError):
+    """Exact replay cannot safely reconstruct a recorded tool exception type."""
+
+
+class UnreplayableCaptureError(TraceForgeError):
+    """A completed application run cannot produce legal exact-replay evidence."""
+
+
+SAFE_TOOL_EXCEPTION_TYPES: dict[str, type[Exception]] = {"TimeoutError": TimeoutError}
+
+
+def recorded_tool_exception_type(error: Exception) -> str:
+    """Return an approved name only when the concrete exception class is exact."""
+    for name, exception_type in SAFE_TOOL_EXCEPTION_TYPES.items():
+        if type(error) is exception_type:
+            return name
+    return f"unsupported:{type(error).__name__}"

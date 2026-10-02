@@ -6,11 +6,15 @@ from copy import deepcopy
 from typing import Any
 
 from traceforge.canonical import request_fingerprint
+from traceforge.capture import ToolArgumentSanitizer, sanitize_tool_arguments
 from traceforge.exceptions import (
+    SAFE_TOOL_EXCEPTION_TYPES,
     DependencyMismatchError,
     MissingDependencyError,
     UnexpectedDependencyError,
+    UnsupportedToolFailureError,
 )
+from traceforge.interfaces import DependencyAdapter
 
 
 class RecordedDependencyAdapter:
@@ -60,3 +64,38 @@ class RecordedDependencyAdapter:
                 f"missing dependency call at sequence {self._index + 1}: "
                 f"expected {next_recorded['kind']} {next_recorded['operation']}"
             )
+
+
+def assert_replayable_tool_failures(recorded: list[dict[str, Any]]) -> None:
+    """Reject unsupported recorded tool failures before subject code can catch them."""
+    for dependency in recorded:
+        outcome = dependency["outcome"]
+        if dependency["kind"] != "tool" or outcome["status"] != "errored":
+            continue
+        error_type = outcome["error"]["type"]
+        if error_type not in SAFE_TOOL_EXCEPTION_TYPES:
+            raise UnsupportedToolFailureError(
+                f"recorded tool failure type {error_type!r} has no approved safe replay mapping"
+            )
+
+
+def invoke_recorded_tool(
+    dependencies: DependencyAdapter,
+    operation: str,
+    arguments: Any,
+    *,
+    sanitizer: ToolArgumentSanitizer | None = None,
+) -> Any:
+    """Return or safely raise one recorded tool outcome without a live fallback."""
+    safe_arguments = sanitize_tool_arguments(arguments, sanitizer=sanitizer).value
+    outcome = dependencies.invoke("tool", operation, {"arguments": safe_arguments})
+    if outcome["status"] == "returned":
+        return deepcopy(outcome["response"]["result"])
+
+    error = outcome["error"]
+    exception_type = SAFE_TOOL_EXCEPTION_TYPES.get(error["type"])
+    if exception_type is None:
+        raise UnsupportedToolFailureError(
+            f"recorded tool failure type {error['type']!r} has no approved safe replay mapping"
+        )
+    raise exception_type(error["message"])
