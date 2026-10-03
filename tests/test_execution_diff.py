@@ -453,6 +453,39 @@ def test_swapping_indistinguishable_duplicate_events_is_not_a_reorder(
     assert document["differences"] == []
 
 
+def test_equal_length_lcs_tie_advances_expected_side(diff_api: ModuleType) -> None:
+    expected_first = _event(1, name="first", data={"value": 1})
+    expected_second = _event(2, name="second", data={"value": 2})
+    actual_second = copy.deepcopy(expected_second)
+    actual_second["sequence"] = 1
+    actual_first = copy.deepcopy(expected_first)
+    actual_first["sequence"] = 2
+
+    document = _document(
+        diff_api,
+        original_observation=_observation(events=[expected_first, expected_second]),
+        replay_observation=_observation(
+            events=[
+                actual_second,
+                actual_first,
+                _event(3, name="third", data={"value": 3}),
+            ]
+        ),
+    )
+
+    assert [
+        (item["code"], item["expected_path"], item["actual_path"])
+        for item in document["differences"]
+    ] == [
+        ("event_missing", "/events/0", None),
+        ("event_extra", None, "/events/1"),
+        ("event_extra", None, "/events/2"),
+    ]
+    assert document["differences"][0]["expected"]["value"]["name"] == "first"
+    assert document["differences"][1]["actual"]["value"]["name"] == "first"
+    assert document["differences"][2]["actual"]["value"]["name"] == "third"
+
+
 def test_ambiguous_event_gap_reports_missing_and_extra_without_pairing(
     diff_api: ModuleType,
 ) -> None:
@@ -955,6 +988,37 @@ def test_only_approved_diagnostic_keys_are_ignored(diff_api: ModuleType) -> None
         replay_observation=_observation(output=replay_output),
     )
     assert _only_difference(not_ignored, "value_changed")["path"] == "/output/elapsed_ms"
+
+
+def test_approved_diagnostic_keys_are_ignored_recursively(diff_api: ModuleType) -> None:
+    original_output = {
+        "result": {
+            "metadata": {
+                "duration_ms": 1,
+                "payload": {"recorded_at": "original", "value": "same"},
+            }
+        }
+    }
+    replay_output = copy.deepcopy(original_output)
+    replay_output["result"]["metadata"]["duration_ms"] = 999
+    replay_output["result"]["metadata"]["payload"]["recorded_at"] = "replay"
+
+    ignored = _document(
+        diff_api,
+        original_observation=_observation(output=original_output),
+        replay_observation=_observation(output=replay_output),
+    )
+    assert ignored["matches"] is True
+    assert ignored["differences"] == []
+
+    replay_output["result"]["metadata"]["payload"]["value"] = "changed"
+    compared = _document(
+        diff_api,
+        original_observation=_observation(output=original_output),
+        replay_observation=_observation(output=replay_output),
+    )
+    assert [item["code"] for item in compared["differences"]] == ["value_changed"]
+    assert compared["differences"][0]["path"] == "/output/result/metadata/payload/value"
 
 
 def test_diff_contract_has_no_regression_input_or_result(diff_api: ModuleType) -> None:

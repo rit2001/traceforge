@@ -197,6 +197,7 @@ def test_replay_diff_core_remains_framework_neutral() -> None:
     core_paths = [
         REPOSITORY_ROOT / "src" / "traceforge" / "dependencies.py",
         REPOSITORY_ROOT / "src" / "traceforge" / "diff.py",
+        REPOSITORY_ROOT / "src" / "traceforge" / "regression.py",
         REPOSITORY_ROOT / "src" / "traceforge" / "replay.py",
     ]
     prohibited = ("langgraph", "langchain", "crewai", "stategraph", "toolmessage", "aimessage")
