@@ -9,6 +9,7 @@ from importlib import import_module
 from typing import Any
 
 from traceforge.dependencies import RecordedDependencyAdapter, assert_replayable_tool_failures
+from traceforge.diff import ExecutionDiff, compare_execution
 from traceforge.exceptions import SemanticValidationError
 from traceforge.interfaces import DependencyAdapter, FrameworkAdapter
 from traceforge.metrics import replay as record_replay
@@ -29,6 +30,7 @@ class ReplayResult:
     replay_observation: dict[str, Any]
     deterministic_match: bool
     regression: RegressionResult | None
+    execution_diff: ExecutionDiff | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -40,6 +42,9 @@ class ReplayResult:
                 "ignored_fields": sorted(_DIAGNOSTIC_KEYS),
             },
             "regression": None if self.regression is None else self.regression.to_dict(),
+            "execution_diff": (
+                None if self.execution_diff is None else self.execution_diff.to_dict()
+            ),
         }
 
 
@@ -110,6 +115,12 @@ def _replay_exact(
     validate_observation_structure(replay_observation)
     validate_observation_semantics(replay_observation)
 
+    execution_diff = compare_execution(
+        original_observation=original_observation,
+        replay_observation=replay_observation,
+        recorded_dependencies=capsule["dependencies"],
+        replay_dependencies=dependencies.transcript,
+    )
     regression = (
         None
         if regression_spec is None
@@ -123,5 +134,6 @@ def _replay_exact(
             _without_diagnostics(original_observation) == _without_diagnostics(replay_observation)
         ),
         regression=regression,
+        execution_diff=execution_diff,
     )
     return result

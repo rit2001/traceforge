@@ -14,6 +14,9 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
   real ordered ChatGroq/Tavily capture, persisted exact replay with both live callables disabled,
   fail-closed changed requests, and external regression evaluation.
 - Exact offline replay with recorded model, HTTP, and generic tool outcomes, global sequential request matching, fail-closed fixtures, a process-wide network guard, deterministic comparison, regression evaluation, and pytest export.
+- Portable structured execution comparison over generic observations, dependencies, events, and
+  terminal state. Successful exact replay records a detached successful-consumption dependency
+  transcript and attaches the derived `ExecutionDiff` additively to `ReplayResult`.
 - Controlled weather, RAG citation-grounding, and tool-argument-safety examples.
 - Local FastAPI dashboard with allow-listed runners and SQLite replay history.
 - Optional local distributed ingestion: Go HTTP gateway, bounded asynchronous Kafka publishing, at-least-once Python consumption, SQLite ordering/idempotency, DLQ handling, capsule assembly, and sealing.
@@ -32,7 +35,7 @@ TraceForge does not currently provide fork replay, live replay, arbitrary or pro
 
 - Python, LangGraph, and tool-calling agents are the first supported product boundary.
 - TraceForge's capture core, Replay Capsule contracts, dependency contract, sealing, validation,
-  replay, regression, and future core diff semantics are framework-agnostic. LangGraph is the first
+  replay, regression, and core diff semantics are framework-agnostic. LangGraph is the first
   integration proof and all LangGraph translation remains behind a thin adapter boundary.
 - Core semantics never interpret LangGraph types, `StateGraph`, node semantics, callbacks, or graph
   state. If LangGraph's API shape appears to require a core change solely for LangGraph, stop and
@@ -103,15 +106,19 @@ The canonical security model is [docs/security.md](docs/security.md); vulnerabil
 - [ADR-0007](docs/decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md): Replay Capsule `0.2.0`, generic ordered tool dependencies, safe request identity, and bounded failure replay.
 - [ADR-0008](docs/decisions/ADR-0008-framework-agnostic-core.md): framework-agnostic evidence,
   replay, regression, and diff semantics with framework-specific translation confined to adapters.
+- [ADR-0009](docs/decisions/ADR-0009-portable-structured-execution-diff.md): portable structured
+  execution comparison, conservative sequence alignment, and successful exact-replay dependency
+  transcript semantics.
 
 ADRs are historical records. Supersede them with a new ADR; do not silently rewrite accepted decisions.
 
 ## Current Branch, Milestone, and Limitations
 
-- Documented branch: `main`; retained branch `release/v0.4.1` and tag `v0.4.1` identify the verified release commit.
+- Documented branch: `feat/v0.5-structured-execution-diff`; retained branch `release/v0.4.1` and
+  tag `v0.4.1` identify the verified release commit.
 - Current milestone: `v0.5.0 — Real Agent Capture` is active; the generic Replay Capsule `0.2.0`
-  tool boundary and one separate real Agentic-chatbot integration are implemented for review while
-  `0.1.0` remains unchanged. Structured diff is not implemented.
+  tool boundary, one separate real Agentic-chatbot integration, and the portable structured
+  execution diff with exact-replay integration are implemented while `0.1.0` remains unchanged.
 - Known limitations: only one application-owned real-agent integration exists; tool results that require
   sanitization make the pending capture ineligible for an exact-replay draft while the application
   still receives its original result; generic tool capture requires the standard scanner; only
@@ -119,14 +126,15 @@ ADRs are historical records. Supersede them with a new ADR; do not silently rewr
   remains best effort; the replay network guard is process-wide; transport is at least once; local
   SQLite is single writer; and kind, Terraform, and the Collector topology are local development
   only.
+- Follow-up technical debt, pre-existing on base `66a3dec` and outside Issue #3: harden alias
+  isolation for `ReplayResult` observation exports and for `RegressionResult`/`AssertionResult`
+  expected and actual assertion snapshots.
 
 Live branch, milestone, blockers, and assumptions belong in [docs/project-state.md](docs/project-state.md), not in this summary.
 
 ## Exact Next Approved Milestone
 
-After review of the real-agent integration, the next approved v0.5.0 slice is Issue #3: define and
-test a framework-neutral structured comparison over portable observations, ordered dependencies,
-events, and outputs. Framework-specific presentation remains adapter-side.
+Next milestone: not yet selected.
 
 ## Required Reading Order
 

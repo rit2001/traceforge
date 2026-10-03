@@ -1,6 +1,6 @@
 # Project State
 
-Last verified date: 2026-10-02.
+Last verified date: 2026-10-03.
 
 ## Current Phase
 
@@ -8,11 +8,11 @@ The replay feasibility implementation, optional local distributed-ingestion and 
 
 ## Current Milestone
 
-`v0.5.0 — Real Agent Capture` is active. Issue #2's generic tool dependency primitive and Issue
-#1's separate real Agentic-chatbot integration are implemented in their review worktrees. The real
-integration consumes TraceForge through an editable package boundary, captures an actual ordered
-model → tool → model execution as Replay Capsule `0.2.0`, and replays it with both live providers
-replaced by sentinels. Structured execution diff remains the next unimplemented slice.
+`v0.5.0 — Real Agent Capture` is active. Issue #2's generic tool dependency primitive, Issue #1's
+separate real Agentic-chatbot integration proof, and Issue #3's portable structured execution diff
+are complete. Exact replay now collects a detached successful-consumption dependency transcript
+and attaches an additive `ExecutionDiff` to each technically successful `ReplayResult`. Replay
+Capsule schemas remain unchanged, and the core remains framework-neutral.
 
 The release aligned package, CLI, Docker, CI, public documentation, license, contributor framework, artifacts, installation, localhost workbench, Kafka topic configuration, and bounded publication-safety surfaces. It did not redesign replay semantics, implement fork replay, or add production-readiness claims.
 
@@ -35,6 +35,12 @@ The release aligned package, CLI, Docker, CI, public documentation, license, con
   a persisted capsule in a fresh process with both live callables replaced by sentinels, rejected
   changed model and tool requests, and passed an external regression specification. The temporary
   live capsule was reviewed but was not added to this repository.
+- v0.5 Issue #2 generic tool dependencies: Replay Capsule `0.2.0` supports globally ordered generic
+  tool fixtures, fail-closed request identity, safe recorded results, and bounded approved error
+  reconstruction without changing `0.1.0`.
+- v0.5 Issue #3 portable structured execution diff: ADR-0009's framework-neutral `ExecutionDiff`,
+  conservative dependency/event alignment, detached successful-consumption transcript, and
+  additive exact-replay result integration are implemented without changing either capsule schema.
 
 ## Repository Status
 
@@ -42,7 +48,14 @@ Documentation, Replay Capsule `0.1.0` and `0.2.0` schemas, the Capture Event sch
 
 The documented release state is on `main`; retained branch `release/v0.4.1` and tag `v0.4.1` point to the verified release commit.
 
-The published distribution remains `0.4.1`; Replay Capsule versions and Capture Event `0.2.0` are independent contracts. The working tree supports explicit validation/replay dispatch for Replay Capsule `0.1.0` and `0.2.0`. `0.2.0` adds generic ordered tool capture/replay with reject-by-default sensitive request identity and a bounded `TimeoutError` replay mapping. One separate real application now proves the package/API seam, but TraceForge still has no arbitrary LangGraph instrumentation, fork replay, live replay, hosted service, authentication, cloud/production Kubernetes, or cloud Terraform.
+The published distribution remains `0.4.1`; Replay Capsule versions, Capture Event `0.2.0`, and
+derived `ExecutionDiff` format `0.1.0` are independent contracts. The working tree supports explicit
+validation/replay dispatch for Replay Capsule `0.1.0` and `0.2.0`. `0.2.0` adds generic ordered tool
+capture/replay with reject-by-default sensitive request identity and a bounded `TimeoutError` replay
+mapping. Exact replay additively emits a structured diff after validated execution and complete
+fixture consumption. One separate real application proves the package/API seam, but TraceForge
+still has no arbitrary LangGraph instrumentation, fork replay, live replay, hosted service,
+authentication, cloud/production Kubernetes, or cloud Terraform.
 
 ## Confirmed Decisions
 
@@ -61,8 +74,10 @@ The published distribution remains `0.4.1`; Replay Capsule versions and Capture 
 - Terraform owns only the Namespace, ResourceQuota, LimitRange, dedicated ServiceAccounts, labels, and outputs; Kustomize owns all workloads, Services, ConfigMaps, PVC/application data, and Pod configuration under ADR-0006.
 - Replay Capsule `0.1.0` remains immutable; `0.2.0` adds generic tool dependencies and explicit version dispatch under ADR-0007.
 - TraceForge's capture core, capsule/dependency contracts, sealing, validation, replay, regression,
-  and future core diff semantics remain framework-agnostic under ADR-0008. LangGraph is the first
+  and core diff semantics remain framework-agnostic under ADR-0008. LangGraph is the first
   integration proof and must stay behind a thin adapter boundary.
+- ADR-0009 defines `ExecutionDiff` as derived runtime data, keeps exact replay technical status and
+  regression evaluation separate, and leaves Replay Capsule schemas unchanged.
 
 ## Current Assumptions
 
@@ -77,7 +92,9 @@ The published distribution remains `0.4.1`; Replay Capsule versions and Capture 
   universal instrumentation API or evidence of compatibility with unrelated graph shapes.
 - Tool results requiring transformation cannot become v0.5 exact-replay evidence; no generic
   application-owned result sanitizer/projection contract exists.
-- Fork replay and richer graph/message/tool diff semantics are not defined in executable code.
+- Fork replay and framework-specific graph/message/tool presentation are not implemented.
+- Pre-existing follow-up technical debt outside Issue #3: `ReplayResult` observation export alias
+  hardening and `RegressionResult`/`AssertionResult` expected/actual snapshot alias hardening.
 - Sanitization remains best effort and still requires human review before fixtures are shared.
 - Concurrent host-side inspection of the worker's bind-mounted SQLite WAL is unsupported on Docker Desktop; use a service-owned reader or inspect after shutdown.
 - The kind worker remains one replica and SQLite remains single writer; the local RWO PVC and ephemeral Kafka do not provide high availability or disaster recovery.
@@ -88,10 +105,7 @@ Cloud Terraform, remote production state, cloud/production Kubernetes, Helm, ope
 
 ## Exact Next Approved Task
 
-After human review of Issue #1, begin Issue #3 with failing offline tests for a portable structured
-comparison of generic observations, ordered dependencies, events, and outputs. Keep any LangGraph
-message/node presentation in the application adapter; the core diff must not interpret framework
-types or lifecycle semantics.
+Next milestone: not yet selected. Do not begin another feature without explicit approval.
 
 ## Milestone-Boundary Checklist
 

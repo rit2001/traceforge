@@ -22,11 +22,16 @@ class RecordedDependencyAdapter:
 
     def __init__(self, recorded: list[dict[str, Any]]) -> None:
         self._recorded = deepcopy(recorded)
+        self._transcript: list[dict[str, Any]] = []
         self._index = 0
 
     @property
     def consumed(self) -> int:
         return self._index
+
+    @property
+    def transcript(self) -> list[dict[str, Any]]:
+        return deepcopy(self._transcript)
 
     def invoke(self, kind: str, operation: str, request: Any) -> dict[str, Any]:
         if self._index >= len(self._recorded):
@@ -54,6 +59,15 @@ class RecordedDependencyAdapter:
                 "sanitized request fingerprint differs from the recorded fixture"
             )
 
+        self._transcript.append(
+            {
+                "sequence": recorded["sequence"],
+                "kind": recorded["kind"],
+                "operation": recorded["operation"],
+                "request": deepcopy(request),
+                "outcome": deepcopy(recorded["outcome"]),
+            }
+        )
         self._index += 1
         return deepcopy(recorded["outcome"])
 

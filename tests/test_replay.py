@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from traceforge.dependencies import RecordedDependencyAdapter
+from traceforge.diff import ExecutionDiff
 from traceforge.examples.weather_agent import run as weather_runner
 from traceforge.exceptions import (
     DependencyMismatchError,
@@ -19,7 +20,7 @@ from traceforge.exceptions import (
 )
 from traceforge.interfaces import DependencyAdapter
 from traceforge.regression import evaluate_regression
-from traceforge.replay import CallableFrameworkAdapter, replay_exact
+from traceforge.replay import CallableFrameworkAdapter, ReplayResult, replay_exact
 from traceforge.sealing import seal_capsule
 from traceforge.store import JsonFileCapsuleStore
 
@@ -33,6 +34,14 @@ def _weather_artifacts() -> tuple[dict[str, Any], dict[str, Any]]:
     return store.load(WEATHER_CAPSULE), store.load(WEATHER_SPEC)
 
 
+def _contains_key(value: Any, key: str) -> bool:
+    if isinstance(value, dict):
+        return key in value or any(_contains_key(item, key) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_key(item, key) for item in value)
+    return False
+
+
 def test_successful_exact_replay_and_behavioural_pass() -> None:
     capsule, spec = _weather_artifacts()
 
@@ -42,6 +51,161 @@ def test_successful_exact_replay_and_behavioural_pass() -> None:
     assert result.deterministic_match is False
     assert result.replay_observation["output"]["umbrella_needed"] is True
     assert result.regression is not None and result.regression.passed
+
+
+def test_replay_result_preserves_pre_execution_diff_constructor_shape() -> None:
+    original_observation = {
+        "execution_status": "completed",
+        "events": [],
+        "output": {"result": "original"},
+        "error": None,
+    }
+    replay_observation = copy.deepcopy(original_observation)
+
+    result = ReplayResult(
+        "completed",
+        original_observation,
+        replay_observation,
+        True,
+        None,
+    )
+
+    assert result.execution_diff is None
+    assert result.to_dict() == {
+        "technical_status": "completed",
+        "original_observation": original_observation,
+        "replay_observation": replay_observation,
+        "comparison": {
+            "deterministic_match": True,
+            "ignored_fields": [
+                "duration_ms",
+                "finished_at",
+                "recorded_at",
+                "started_at",
+                "timestamp",
+            ],
+        },
+        "regression": None,
+        "execution_diff": None,
+    }
+
+
+def test_successful_exact_replay_adds_structured_diff_without_changing_existing_fields(
+    capsule_draft: dict[str, Any],
+) -> None:
+    capsule = seal_capsule(capsule_draft)
+    capsule_before = copy.deepcopy(capsule)
+    regression_spec = {
+        "version": "0.1.0",
+        "assertions": [{"path": "output.result", "operator": "equals", "expected": "synthetic"}],
+    }
+    regression_before = copy.deepcopy(regression_spec)
+
+    def runner(invocation: Any, dependencies: DependencyAdapter) -> dict[str, Any]:
+        del invocation
+        recorded = capsule["dependencies"][0]
+        dependencies.invoke(recorded["kind"], recorded["operation"], recorded["request"])
+        return copy.deepcopy(capsule["original_observation"])
+
+    result = replay_exact(capsule, CallableFrameworkAdapter(runner), regression_spec)
+    document = result.to_dict()
+
+    assert isinstance(result.execution_diff, ExecutionDiff)
+    assert result.execution_diff.to_dict()["matches"] is True
+    assert result.technical_status == "completed"
+    assert result.original_observation == capsule_before["original_observation"]
+    assert result.replay_observation == capsule_before["original_observation"]
+    assert result.deterministic_match is True
+    assert result.regression is not None and result.regression.passed is True
+    assert document["technical_status"] == "completed"
+    assert document["original_observation"] == capsule_before["original_observation"]
+    assert document["replay_observation"] == capsule_before["original_observation"]
+    assert document["comparison"] == {
+        "deterministic_match": True,
+        "ignored_fields": [
+            "duration_ms",
+            "finished_at",
+            "recorded_at",
+            "started_at",
+            "timestamp",
+        ],
+    }
+    assert document["regression"] == result.regression.to_dict()
+    assert document["execution_diff"] == result.execution_diff.to_dict()
+    assert "regression" not in document["execution_diff"]
+    assert _contains_key(document["execution_diff"], "assertions") is False
+    assert capsule == capsule_before
+    assert regression_spec == regression_before
+
+
+def test_successful_replay_observation_divergence_has_nonmatching_structured_diff(
+    capsule_draft: dict[str, Any],
+) -> None:
+    capsule = seal_capsule(capsule_draft)
+    capsule_before = copy.deepcopy(capsule)
+    regression_spec = {
+        "version": "0.1.0",
+        "assertions": [{"path": "execution_status", "operator": "equals", "expected": "completed"}],
+    }
+
+    def runner(invocation: Any, dependencies: DependencyAdapter) -> dict[str, Any]:
+        del invocation
+        recorded = capsule["dependencies"][0]
+        dependencies.invoke(recorded["kind"], recorded["operation"], recorded["request"])
+        observation = copy.deepcopy(capsule["original_observation"])
+        observation["output"]["result"] = "changed during replay"
+        return observation
+
+    result = replay_exact(capsule, CallableFrameworkAdapter(runner), regression_spec)
+    execution_diff = result.execution_diff.to_dict()
+
+    assert result.technical_status == "completed"
+    assert result.deterministic_match is False
+    assert execution_diff["matches"] is False
+    assert execution_diff["sections"]["dependencies"]["matches"] is True
+    assert execution_diff["sections"]["terminal"]["matches"] is False
+    assert execution_diff["first_divergences"]["terminal"] == "/output/result"
+    assert [
+        (difference["section"], difference["code"], difference["path"])
+        for difference in execution_diff["differences"]
+    ] == [("terminal", "value_changed", "/output/result")]
+    assert result.regression is not None and result.regression.passed is True
+    assert capsule == capsule_before
+
+
+def test_dependency_mismatch_remains_a_technical_replay_failure_without_result(
+    capsule_draft: dict[str, Any],
+) -> None:
+    capsule = seal_capsule(capsule_draft)
+    completed_result = None
+
+    def runner(invocation: Any, dependencies: DependencyAdapter) -> dict[str, Any]:
+        del invocation
+        recorded = capsule["dependencies"][0]
+        changed_request = copy.deepcopy(recorded["request"])
+        changed_request["payload"]["messages"][0]["content"] = "changed"
+        dependencies.invoke(recorded["kind"], recorded["operation"], changed_request)
+        raise AssertionError("dependency mismatch should stop before an observation is produced")
+
+    with pytest.raises(DependencyMismatchError, match="request mismatch"):
+        completed_result = replay_exact(capsule, CallableFrameworkAdapter(runner))
+
+    assert completed_result is None
+
+
+def test_replay_diff_core_remains_framework_neutral() -> None:
+    core_paths = [
+        REPOSITORY_ROOT / "src" / "traceforge" / "dependencies.py",
+        REPOSITORY_ROOT / "src" / "traceforge" / "diff.py",
+        REPOSITORY_ROOT / "src" / "traceforge" / "regression.py",
+        REPOSITORY_ROOT / "src" / "traceforge" / "replay.py",
+    ]
+    prohibited = ("langgraph", "langchain", "crewai", "stategraph", "toolmessage", "aimessage")
+
+    for path in core_paths:
+        source = path.read_text(encoding="utf-8").lower()
+        for name in prohibited:
+            assert name not in source
 
 
 def test_place_a_never_receives_place_b_response() -> None:

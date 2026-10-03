@@ -22,15 +22,15 @@ This document owns the current repository responsibility map. Update it whenever
 - **Extension points:** `CapsuleStore` for retrieval, version-dispatched schemas/migrations, and explicitly versioned dependency kinds.
 - **Tests:** [tests/test_capsule.py](../tests/test_capsule.py) and [tests/test_cli.py](../tests/test_cli.py).
 
-## Replay and Regression
+## Replay, Structured Diff, and Regression
 
-- **Responsibility:** Supply recorded dependencies, block live network access, invoke trusted local runners, compare observations, evaluate a separate approved specification, and export pytest.
-- **Important files:** [dependencies.py](../src/traceforge/dependencies.py), [network.py](../src/traceforge/network.py), [replay.py](../src/traceforge/replay.py), [regression.py](../src/traceforge/regression.py), and [export.py](../src/traceforge/export.py).
-- **Inputs:** A valid sealed capsule, trusted `FrameworkAdapter`/runner, and optional regression specification.
-- **Outputs:** `ReplayResult`, assertion results, or a generated offline test file.
-- **Invariants:** Exact replay freezes model, HTTP, and generic tool outcomes; requests match one global sequence and sanitized identity; missing/mismatched/reordered/extra dependencies fail closed; no live fallback; unsupported tool failures stop before subject execution; evidence remains unchanged; assertions live outside the capsule; replay, regression, and future core diff semantics operate only on framework-neutral observations.
-- **Extension points:** `DependencyAdapter`, thin `FrameworkAdapter` implementations, portable comparison views, adapter-side framework-specific presentations, and future explicitly approved fork replay. A new framework must not require evidence/replay semantic changes.
-- **Tests:** [tests/test_replay.py](../tests/test_replay.py), [tests/test_export.py](../tests/test_export.py), [tests/test_case_studies.py](../tests/test_case_studies.py), and [tests/test_langgraph_integration.py](../tests/test_langgraph_integration.py).
+- **Responsibility:** Supply recorded dependencies, retain a detached successful-consumption runtime transcript, block live network access, invoke trusted local runners, compare portable executions, evaluate a separate approved specification, and export pytest.
+- **Important files:** [dependencies.py](../src/traceforge/dependencies.py), [network.py](../src/traceforge/network.py), [diff.py](../src/traceforge/diff.py), [replay.py](../src/traceforge/replay.py), [regression.py](../src/traceforge/regression.py), and [export.py](../src/traceforge/export.py).
+- **Inputs:** A valid sealed capsule, trusted `FrameworkAdapter`/runner, and optional regression specification. `compare_execution()` consumes portable original/replay observations plus ordered recorded/runtime dependency streams.
+- **Outputs:** `ReplayResult` with an additive `ExecutionDiff` after successful exact replay, standalone `ExecutionDiff` values, assertion results, or a generated offline test file.
+- **Invariants:** Exact replay freezes model, HTTP, and generic tool outcomes; requests match one global sequence and sanitized identity; missing/mismatched/reordered/extra dependencies fail closed; no live fallback; unsupported tool failures stop before subject execution; complete fixture consumption precedes diff construction; evidence remains unchanged; assertions live outside the capsule; the runtime transcript and `ExecutionDiff` are derived runtime data, not Replay Capsule evidence, and are not persisted automatically; replay, regression, and diff semantics operate only on framework-neutral observations.
+- **Extension points:** `DependencyAdapter`, thin `FrameworkAdapter` implementations, framework-neutral `compare_execution()` inputs, adapter-side framework-specific presentations, and future explicitly approved fork replay. A new framework must not require evidence/replay/diff semantic changes.
+- **Tests:** [tests/test_execution_diff.py](../tests/test_execution_diff.py), [tests/test_tool_dependencies.py](../tests/test_tool_dependencies.py), [tests/test_replay.py](../tests/test_replay.py), [tests/test_export.py](../tests/test_export.py), [tests/test_case_studies.py](../tests/test_case_studies.py), and [tests/test_langgraph_integration.py](../tests/test_langgraph_integration.py).
 
 ## Capture SDK
 
