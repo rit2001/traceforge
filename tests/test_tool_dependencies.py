@@ -14,6 +14,7 @@ from traceforge import (
     invoke_recorded_tool,
 )
 from traceforge.canonical import request_fingerprint
+from traceforge.dependencies import RecordedDependencyAdapter
 from traceforge.exceptions import (
     DependencyMismatchError,
     MissingDependencyError,
@@ -79,6 +80,36 @@ def _tool_dependency(
             "response": {"result": result},
         },
         "duration_ms": 0,
+    }
+
+
+def _recorded_dependency(
+    *,
+    sequence: int = 1,
+    kind: str = "tool",
+    operation: str = "catalog.lookup",
+    request: Any = None,
+    outcome: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    recorded_request = (
+        {"arguments": {"item_id": sequence}} if request is None else deepcopy(request)
+    )
+    return {
+        "dependency_id": f"dependency-{sequence}",
+        "sequence": sequence,
+        "kind": kind,
+        "operation": operation,
+        "request": recorded_request,
+        "request_fingerprint": request_fingerprint(recorded_request),
+        "outcome": (
+            {
+                "status": "returned",
+                "response": {"result": {"item_id": sequence}},
+            }
+            if outcome is None
+            else deepcopy(outcome)
+        ),
+        "duration_ms": sequence,
     }
 
 
@@ -360,6 +391,227 @@ def test_tool_request_fingerprint_is_stable() -> None:
     request_a = {"arguments": {"nested": {"b": 2, "a": 1}}}
     request_b = {"arguments": {"nested": {"a": 1, "b": 2}}}
     assert request_fingerprint(request_a) == request_fingerprint(request_b)
+
+
+def test_recorded_dependency_transcript_starts_empty() -> None:
+    adapter = RecordedDependencyAdapter([_recorded_dependency()])
+
+    assert adapter.transcript == []
+    with pytest.raises(AttributeError):
+        adapter.transcript = []
+
+
+@pytest.mark.parametrize(
+    ("kind", "operation", "replay_request", "outcome"),
+    [
+        (
+            "model",
+            "generate",
+            {"model": "synthetic-model", "payload": {"prompt": "safe"}},
+            {"status": "returned", "response": {"payload": {"content": "answer"}}},
+        ),
+        (
+            "tool",
+            "catalog.lookup",
+            {"arguments": {"item_id": 7}},
+            {"status": "returned", "response": {"result": {"item_id": 7}}},
+        ),
+        (
+            "http",
+            "GET",
+            {
+                "method": "GET",
+                "url": "https://invalid.example/items/7",
+                "headers": {},
+                "body": None,
+            },
+            {
+                "status": "returned",
+                "response": {"status_code": 200, "headers": {}, "body": {"id": 7}},
+            },
+        ),
+    ],
+)
+def test_successful_dependency_consumption_records_only_generic_transcript_fields(
+    kind: str,
+    operation: str,
+    replay_request: dict[str, Any],
+    outcome: dict[str, Any],
+) -> None:
+    fixture = _recorded_dependency(
+        kind=kind,
+        operation=operation,
+        request=replay_request,
+        outcome=outcome,
+    )
+    adapter = RecordedDependencyAdapter([fixture])
+
+    assert adapter.invoke(kind, operation, deepcopy(replay_request)) == outcome
+
+    assert adapter.transcript == [
+        {
+            "sequence": 1,
+            "kind": kind,
+            "operation": operation,
+            "request": replay_request,
+            "outcome": outcome,
+        }
+    ]
+    assert set(adapter.transcript[0]) == {
+        "sequence",
+        "kind",
+        "operation",
+        "request",
+        "outcome",
+    }
+
+
+def test_dependency_transcript_preserves_global_consumption_order() -> None:
+    fixtures = [
+        _recorded_dependency(
+            sequence=1,
+            kind="model",
+            operation="generate",
+            request={"model": "synthetic-model", "payload": {"turn": 1}},
+        ),
+        _recorded_dependency(
+            sequence=2,
+            kind="tool",
+            operation="catalog.lookup",
+            request={"arguments": {"item_id": 2}},
+        ),
+        _recorded_dependency(
+            sequence=3,
+            kind="http",
+            operation="GET",
+            request={"method": "GET", "url": "https://invalid.example/items/3"},
+        ),
+    ]
+    adapter = RecordedDependencyAdapter(fixtures)
+
+    for fixture in fixtures:
+        adapter.invoke(fixture["kind"], fixture["operation"], fixture["request"])
+
+    assert [entry["sequence"] for entry in adapter.transcript] == [1, 2, 3]
+    assert [entry["kind"] for entry in adapter.transcript] == ["model", "tool", "http"]
+
+
+def test_dependency_transcript_uses_actual_request_and_recorded_outcome() -> None:
+    fixture = _recorded_dependency(
+        request={"arguments": {"quantity": 1}},
+        outcome={"status": "returned", "response": {"result": {"source": "recorded"}}},
+    )
+    actual_request = {"arguments": {"quantity": 1.0}}
+    adapter = RecordedDependencyAdapter([fixture])
+
+    returned_outcome = adapter.invoke("tool", "catalog.lookup", actual_request)
+    entry = adapter.transcript[0]
+
+    assert isinstance(fixture["request"]["arguments"]["quantity"], int)
+    assert isinstance(entry["request"]["arguments"]["quantity"], float)
+    assert entry["outcome"] == fixture["outcome"]
+    assert entry["outcome"] == returned_outcome
+
+
+def test_dependency_transcript_reads_are_alias_isolated_from_inputs_and_outputs() -> None:
+    fixture = _recorded_dependency(
+        request={"arguments": {"items": [1, 2]}},
+        outcome={"status": "returned", "response": {"result": {"items": [1, 2]}}},
+    )
+    fixture_before = deepcopy(fixture)
+    actual_request = deepcopy(fixture["request"])
+    adapter = RecordedDependencyAdapter([fixture])
+
+    returned_outcome = adapter.invoke("tool", "catalog.lookup", actual_request)
+    exported = adapter.transcript
+    exported[0]["request"]["arguments"]["items"].append("export-only")
+    exported[0]["outcome"]["response"]["result"]["items"].append("export-only")
+    actual_request["arguments"]["items"].append("caller-only")
+    returned_outcome["response"]["result"]["items"].append("caller-only")
+
+    assert fixture == fixture_before
+    assert adapter.transcript == [
+        {
+            "sequence": 1,
+            "kind": "tool",
+            "operation": "catalog.lookup",
+            "request": fixture_before["request"],
+            "outcome": fixture_before["outcome"],
+        }
+    ]
+    assert adapter.transcript is not exported
+
+
+@pytest.mark.parametrize(
+    ("kind", "operation", "replay_request", "message"),
+    [
+        ("model", "catalog.lookup", {"arguments": {"item_id": 1}}, "kind mismatch"),
+        ("tool", "catalog.delete", {"arguments": {"item_id": 1}}, "operation mismatch"),
+        ("tool", "catalog.lookup", {"arguments": {"item_id": 2}}, "request mismatch"),
+    ],
+)
+def test_failed_dependency_match_does_not_append_transcript_entry(
+    kind: str,
+    operation: str,
+    replay_request: dict[str, Any],
+    message: str,
+) -> None:
+    adapter = RecordedDependencyAdapter([_recorded_dependency()])
+
+    with pytest.raises(DependencyMismatchError, match=message):
+        adapter.invoke(kind, operation, replay_request)
+
+    assert adapter.consumed == 0
+    assert adapter.transcript == []
+
+
+def test_unexpected_extra_dependency_does_not_append_transcript_entry() -> None:
+    fixture = _recorded_dependency()
+    adapter = RecordedDependencyAdapter([fixture])
+    adapter.invoke(fixture["kind"], fixture["operation"], fixture["request"])
+    transcript_before = adapter.transcript
+
+    with pytest.raises(UnexpectedDependencyError, match="no recorded fixture remains"):
+        adapter.invoke(fixture["kind"], fixture["operation"], fixture["request"])
+
+    assert adapter.transcript == transcript_before
+
+
+def test_incomplete_consumption_does_not_append_missing_transcript_entry() -> None:
+    fixtures = [_recorded_dependency(sequence=1), _recorded_dependency(sequence=2)]
+    adapter = RecordedDependencyAdapter(fixtures)
+    adapter.invoke(fixtures[0]["kind"], fixtures[0]["operation"], fixtures[0]["request"])
+
+    with pytest.raises(MissingDependencyError, match="sequence 2"):
+        adapter.assert_consumed()
+
+    assert [entry["sequence"] for entry in adapter.transcript] == [1]
+
+
+def test_consumed_recorded_error_is_transcribed_before_approved_exception_is_raised() -> None:
+    errored_outcome = {
+        "status": "errored",
+        "error": {"type": "TimeoutError", "message": "controlled timeout", "data": None},
+    }
+    fixture = _recorded_dependency(
+        operation="remote.wait",
+        request={"arguments": {"seconds": 1}},
+        outcome=errored_outcome,
+    )
+    adapter = RecordedDependencyAdapter([fixture])
+
+    with pytest.raises(TimeoutError, match="controlled timeout"):
+        invoke_recorded_tool(adapter, "remote.wait", {"seconds": 1})
+
+    assert adapter.transcript == [
+        {
+            "sequence": 1,
+            "kind": "tool",
+            "operation": "remote.wait",
+            "request": {"arguments": {"seconds": 1}},
+            "outcome": errored_outcome,
+        }
+    ]
 
 
 def test_exact_replay_returns_recorded_tool_result() -> None:
