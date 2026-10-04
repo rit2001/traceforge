@@ -4,6 +4,7 @@ __version__ = "0.4.1"
 
 from traceforge.capture import BestEffortRedactionScanner, CaptureSession
 from traceforge.dependencies import invoke_recorded_tool
+from traceforge.divergence import DivergenceAnalysis, analyze_divergence
 from traceforge.exceptions import (
     DependencyMismatchError,
     IntegrityError,
@@ -27,6 +28,7 @@ __all__ = [
     "__version__",
     "DependencyMismatchError",
     "DependencyAdapter",
+    "DivergenceAnalysis",
     "BestEffortRedactionScanner",
     "CaptureSession",
     "ExportError",
@@ -42,6 +44,7 @@ __all__ = [
     "UnsafeToolArgumentsError",
     "UnsupportedToolFailureError",
     "export_pytest",
+    "analyze_divergence",
     "load_runner",
     "invoke_recorded_tool",
     "replay_exact",

@@ -17,6 +17,9 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
 - Portable structured execution comparison over generic observations, dependencies, events, and
   terminal state. Successful exact replay records a detached successful-consumption dependency
   transcript and attaches the derived `ExecutionDiff` additively to `ReplayResult`.
+- Immutable evidence-backed divergence analysis copies per-domain summaries and first paths from
+  `ExecutionDiff`, reports bounded successful exact-replay dependency reproduction, and explicitly
+  rejects global chronology, root-cause, and cross-domain causal claims.
 - Controlled weather, RAG citation-grounding, and tool-argument-safety examples.
 - Local FastAPI dashboard with allow-listed runners and SQLite replay history.
 - Local Workbench original-run catalog and execution-forensics detail backed by read-only assembly
@@ -32,14 +35,21 @@ Only the executed evidence in [docs/verification-ledger.md](docs/verification-le
 
 ## Explicit Non-Capabilities
 
-TraceForge does not currently provide fork replay, live replay, arbitrary or production-wide capture instrumentation, broad framework support, hosted storage, authentication, multi-tenancy, production operations, automatic repair, cloud/production Kubernetes or Terraform, ClickHouse, SaaS billing, or a production security guarantee. The single real-agent proof and local kind/Terraform gates are not evidence of high availability, scale, cloud compatibility, or security. They make no adoption, benchmark, reliability, or hallucination-elimination claim.
+TraceForge does not currently provide fork replay, live replay, global divergence chronology,
+root-cause or cross-domain causal attribution, arbitrary or production-wide capture instrumentation,
+broad framework support, hosted storage, authentication, multi-tenancy, production operations,
+automatic repair, cloud/production Kubernetes or Terraform, ClickHouse, SaaS billing, or a
+production security guarantee. The single real-agent proof and local kind/Terraform gates are not
+evidence of high availability, scale, cloud compatibility, or security. They make no adoption,
+benchmark, reliability, or hallucination-elimination claim.
 
 ## Architectural Invariants
 
 - Python, LangGraph, and tool-calling agents are the first supported product boundary.
 - TraceForge's capture core, Replay Capsule contracts, dependency contract, sealing, validation,
-  replay, regression, and core diff semantics are framework-agnostic. LangGraph is the first
-  integration proof and all LangGraph translation remains behind a thin adapter boundary.
+  replay, regression, core diff, and divergence-analysis semantics are framework-agnostic.
+  LangGraph is the first integration proof and all LangGraph translation remains behind a thin
+  adapter boundary.
 - Core semantics never interpret LangGraph types, `StateGraph`, node semantics, callbacks, or graph
   state. If LangGraph's API shape appears to require a core change solely for LangGraph, stop and
   reconsider the boundary rather than coupling the core.
@@ -114,18 +124,23 @@ The canonical security model is [docs/security.md](docs/security.md); vulnerabil
   transcript semantics.
 - [ADR-0010](docs/decisions/ADR-0010-workbench-run-read-model.md): original-run Workbench read
   model, operational/evidence separation, explicit evidence states, and read-only local APIs.
+- [ADR-0011](docs/decisions/ADR-0011-evidence-backed-divergence-analysis.md): versioned
+  evidence-backed divergence analysis, section-scoped first paths, exact-replay context, and
+  explicit non-causal limits.
 
 ADRs are historical records. Supersede them with a new ADR; do not silently rewrite accepted decisions.
 
 ## Current Branch, Milestone, and Limitations
 
-- Documented branch: `feat/v0.5-workbench-v1`; retained branch `release/v0.4.1` and
+- Documented branch: `feat/v0.5-divergence-analysis`; retained branch `release/v0.4.1` and
   tag `v0.4.1` identify the verified release commit.
 - Current milestone: `v0.5.0 — Real Agent Capture` is active; the generic Replay Capsule `0.2.0`
   tool boundary, one separate real Agentic-chatbot integration, and the portable structured
-  execution diff with exact-replay integration are implemented. Workbench V1 Phase 1 adds a
-  read-only original-run catalog, explicit source states, reproducible controlled review data, and
-  a real Run Detail view while `0.1.0` remains unchanged.
+  execution diff with exact-replay integration are implemented. Issue #4 derives a compact
+  framework-neutral divergence analysis from the diff without changing comparison semantics.
+  Workbench V1 Phase 1 adds a read-only original-run catalog, explicit source states, reproducible
+  controlled review data, a real Run Detail view, and bounded replay-result analysis while `0.1.0`
+  remains unchanged.
 - Known limitations: only one application-owned real-agent integration exists; tool results that require
   sanitization make the pending capture ineligible for an exact-replay draft while the application
   still receives its original result; generic tool capture requires the standard scanner; only
@@ -134,7 +149,8 @@ ADRs are historical records. Supersede them with a new ADR; do not silently rewr
   SQLite is single writer; and kind, Terraform, and the Collector topology are local development
   only.
 - Workbench limitations: no durable original-run-to-runner association, no persisted replay
-  observation/diff/assertion detail, and no parent-child span or multi-agent causal graph yet.
+  observation/diff/analysis/assertion detail, and no parent-child span or multi-agent causal graph
+  yet. Current analysis cannot rank domains globally or infer cause.
   Assembly rows still retain service-local absolute capsule paths; Workbench has a confined trusted
   startup-root fallback for cross-environment reads, while a portable durable reference remains
   follow-up storage debt.

@@ -230,6 +230,24 @@ textarea { width: 100%; min-height: 105px; resize: vertical; padding: 9px; borde
 .success-state { border-color: #c9e5d8; }
 .report-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 .report-section h3 { margin: 0 0 7px; font-size: .78rem; }
+.divergence-analysis { padding: 13px; border: 1px solid #dfe3ef; border-radius: 8px; background: #fafbff; }
+.analysis-context { margin: 0 0 9px !important; font-weight: 700; }
+.analysis-context.good { color: var(--green); }
+.analysis-match { margin: 2px 0 0 !important; padding: 10px; border: 1px solid #cbe6d9; border-radius: 7px; background: #f7fcf9; color: var(--green) !important; font-weight: 700; }
+.analysis-domain-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.analysis-domain { min-width: 0; padding: 9px; border: 1px solid #dfe4ec; border-radius: 7px; background: #fff; }
+.analysis-domain > span { display: block; color: #818a9a; font-size: .58rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.analysis-domain > strong { display: block; margin-top: 4px; color: #4c566b; font-size: .7rem; }
+.analysis-domain.matched { border-color: #cbe6d9; background: #f7fcf9; }
+.analysis-domain.matched > strong { color: var(--green); }
+.analysis-domain.diverged { border-color: #ead7ae; background: #fffaf1; }
+.analysis-domain.diverged > strong { color: var(--amber); }
+.analysis-domain p { margin: 7px 0 0; color: #7b6843; font-size: .61rem; line-height: 1.4; }
+.analysis-domain code { display: block; margin-top: 2px; overflow-wrap: anywhere; color: #594723; font-size: .62rem; }
+.analysis-conclusion { margin: 10px 0 0 !important; color: #4f596e !important; font-weight: 650; }
+.analysis-bound { margin: 5px 0 0 !important; color: #727c8f !important; }
+.analysis-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 10px; }
+.analysis-actions .text-action { margin-left: 2px; }
 .difference-list { display: grid; gap: 7px; margin: 9px 0; }
 .difference-record { min-width: 0; padding: 10px; border: 1px solid #e5d8bb; border-radius: 7px; background: #fffaf0; }
 .difference-record header { display: flex; align-items: center; gap: 8px; }
