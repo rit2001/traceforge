@@ -31,6 +31,7 @@ from traceforge.exceptions import (
 from traceforge.history import SQLiteReplayHistory
 from traceforge.metrics import asgi_app
 from traceforge.replay import CallableFrameworkAdapter, load_runner, replay_exact
+from traceforge.workbench import SQLiteRunCatalog
 
 MAX_UPLOAD_BYTES = 1_000_000
 _RUNNER_ID = re.compile(r"^[a-z][a-z0-9-]{0,62}$")
@@ -235,11 +236,14 @@ def create_app(
     database: Path,
     max_upload_bytes: int = MAX_UPLOAD_BYTES,
     runner_registrations: Iterable[str] = (),
+    assembly_database: Path | None = None,
+    capsule_directory: Path | None = None,
 ) -> FastAPI:
     """Create a dashboard with explicit local dependencies for easy testing."""
     package_dir = Path(__file__).resolve().parent
     templates = Jinja2Templates(directory=package_dir / "templates")
     history = SQLiteReplayHistory(database)
+    runs = SQLiteRunCatalog(assembly_database, capsule_directory)
     registry = build_runner_registry(runner_registrations)
     app = FastAPI(title="TraceForge Replay", docs_url=None, redoc_url=None)
     app.mount("/static", StaticFiles(directory=package_dir / "static"), name="static")
@@ -266,11 +270,14 @@ def create_app(
 
     @app.get("/", response_class=HTMLResponse)
     def dashboard(request: Request) -> Any:
+        catalog = runs.snapshot()
         return templates.TemplateResponse(
             request,
             "dashboard.html",
             {
                 "history": history.recent(),
+                "run_source": catalog.source_dict(),
+                "runs": [run.to_dict() for run in catalog.runs],
                 "runners": [metadata.public() for metadata in registry.values()],
             },
         )
@@ -278,6 +285,27 @@ def create_app(
     @app.get("/api/history")
     def replay_history() -> list[dict[str, Any]]:
         return [entry.__dict__ for entry in history.recent()]
+
+    @app.get("/api/runs")
+    def original_runs() -> list[dict[str, Any]]:
+        return [run.to_dict() for run in runs.list()]
+
+    @app.get("/api/run-source")
+    def original_run_source() -> dict[str, Any]:
+        return runs.snapshot().source_dict()
+
+    @app.get("/api/runs/{run_id}")
+    def original_run(run_id: str) -> JSONResponse:
+        detail = runs.get(run_id)
+        if detail is None:
+            return _error(
+                "run-not-found",
+                "Original run not found",
+                "No operational capture exists for this run ID.",
+                "Choose a run from the local capture catalog.",
+                404,
+            )
+        return JSONResponse(detail.to_dict())
 
     @app.get("/api/examples/{runner_id}")
     def example(runner_id: str) -> JSONResponse:

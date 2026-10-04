@@ -19,6 +19,9 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
   transcript and attaches the derived `ExecutionDiff` additively to `ReplayResult`.
 - Controlled weather, RAG citation-grounding, and tool-argument-safety examples.
 - Local FastAPI dashboard with allow-listed runners and SQLite replay history.
+- Local Workbench original-run catalog and execution-forensics detail backed by read-only assembly
+  metadata and validated sealed capsule references, with explicit source health, replay attempts
+  kept separate, and a reproducible controlled review-data generator.
 - Optional local distributed ingestion: Go HTTP gateway, bounded asynchronous Kafka publishing, at-least-once Python consumption, SQLite ordering/idempotency, DLQ handling, capsule assembly, and sealing.
 - Optional local Prometheus metrics and OpenTelemetry capture traces with later linked replay traces.
 - Native Kustomize manifests and repeatable automation for the existing distributed stack on one verified local ARM64 kind cluster, including bounded pod-recovery and PVC-persistence checks.
@@ -109,16 +112,20 @@ The canonical security model is [docs/security.md](docs/security.md); vulnerabil
 - [ADR-0009](docs/decisions/ADR-0009-portable-structured-execution-diff.md): portable structured
   execution comparison, conservative sequence alignment, and successful exact-replay dependency
   transcript semantics.
+- [ADR-0010](docs/decisions/ADR-0010-workbench-run-read-model.md): original-run Workbench read
+  model, operational/evidence separation, explicit evidence states, and read-only local APIs.
 
 ADRs are historical records. Supersede them with a new ADR; do not silently rewrite accepted decisions.
 
 ## Current Branch, Milestone, and Limitations
 
-- Documented branch: `feat/v0.5-structured-execution-diff`; retained branch `release/v0.4.1` and
+- Documented branch: `feat/v0.5-workbench-v1`; retained branch `release/v0.4.1` and
   tag `v0.4.1` identify the verified release commit.
 - Current milestone: `v0.5.0 — Real Agent Capture` is active; the generic Replay Capsule `0.2.0`
   tool boundary, one separate real Agentic-chatbot integration, and the portable structured
-  execution diff with exact-replay integration are implemented while `0.1.0` remains unchanged.
+  execution diff with exact-replay integration are implemented. Workbench V1 Phase 1 adds a
+  read-only original-run catalog, explicit source states, reproducible controlled review data, and
+  a real Run Detail view while `0.1.0` remains unchanged.
 - Known limitations: only one application-owned real-agent integration exists; tool results that require
   sanitization make the pending capture ineligible for an exact-replay draft while the application
   still receives its original result; generic tool capture requires the standard scanner; only
@@ -126,6 +133,11 @@ ADRs are historical records. Supersede them with a new ADR; do not silently rewr
   remains best effort; the replay network guard is process-wide; transport is at least once; local
   SQLite is single writer; and kind, Terraform, and the Collector topology are local development
   only.
+- Workbench limitations: no durable original-run-to-runner association, no persisted replay
+  observation/diff/assertion detail, and no parent-child span or multi-agent causal graph yet.
+  Assembly rows still retain service-local absolute capsule paths; Workbench has a confined trusted
+  startup-root fallback for cross-environment reads, while a portable durable reference remains
+  follow-up storage debt.
 - Follow-up technical debt, pre-existing on base `66a3dec` and outside Issue #3: harden alias
   isolation for `ReplayResult` observation exports and for `RegressionResult`/`AssertionResult`
   expected and actual assertion snapshots.

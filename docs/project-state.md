@@ -1,6 +1,6 @@
 # Project State
 
-Last verified date: 2026-10-03.
+Last verified date: 2026-10-04.
 
 ## Current Phase
 
@@ -10,9 +10,12 @@ The replay feasibility implementation, optional local distributed-ingestion and 
 
 `v0.5.0 — Real Agent Capture` is active. Issue #2's generic tool dependency primitive, Issue #1's
 separate real Agentic-chatbot integration proof, and Issue #3's portable structured execution diff
-are complete. Exact replay now collects a detached successful-consumption dependency transcript
-and attaches an additive `ExecutionDiff` to each technically successful `ReplayResult`. Replay
-Capsule schemas remain unchanged, and the core remains framework-neutral.
+are complete. Workbench V1 Phase 1 provides an original-run catalog, explicit evidence states,
+read-only run APIs, explicit original-run source health, a reproducible controlled review catalog,
+and the first execution-forensics Run Detail page over existing assembly state and sealed capsules.
+Exact replay collects a detached successful-consumption dependency transcript and attaches
+additive `ExecutionDiff` values to each technically successful `ReplayResult`. Replay Capsule
+schemas remain unchanged, and the core remains framework-neutral.
 
 The release aligned package, CLI, Docker, CI, public documentation, license, contributor framework, artifacts, installation, localhost workbench, Kafka topic configuration, and bounded publication-safety surfaces. It did not redesign replay semantics, implement fork replay, or add production-readiness claims.
 
@@ -41,6 +44,11 @@ The release aligned package, CLI, Docker, CI, public documentation, license, con
 - v0.5 Issue #3 portable structured execution diff: ADR-0009's framework-neutral `ExecutionDiff`,
   conservative dependency/event alignment, detached successful-consumption transcript, and
   additive exact-replay result integration are implemented without changing either capsule schema.
+- Workbench V1 Phase 1: ADR-0010 separates original runs from replay attempts, reads capture
+  metadata from assembly SQLite, validates referenced sealed capsules, exposes read-only run APIs,
+  distinguishes unavailable sources from valid empty catalogs, and renders a real Run
+  Detail/Execution Forensics view without accepting browser paths or imports. A controlled offline
+  review-data generator recreates one `0.2.0` model → tool → model catalog outside the repository.
 
 ## Repository Status
 
@@ -49,13 +57,21 @@ Documentation, Replay Capsule `0.1.0` and `0.2.0` schemas, the Capture Event sch
 The documented release state is on `main`; retained branch `release/v0.4.1` and tag `v0.4.1` point to the verified release commit.
 
 The published distribution remains `0.4.1`; Replay Capsule versions, Capture Event `0.2.0`, and
-derived `ExecutionDiff` format `0.1.0` are independent contracts. The working tree supports explicit
-validation/replay dispatch for Replay Capsule `0.1.0` and `0.2.0`. `0.2.0` adds generic ordered tool
-capture/replay with reject-by-default sensitive request identity and a bounded `TimeoutError` replay
-mapping. Exact replay additively emits a structured diff after validated execution and complete
-fixture consumption. One separate real application proves the package/API seam, but TraceForge
-still has no arbitrary LangGraph instrumentation, fork replay, live replay, hosted service,
-authentication, cloud/production Kubernetes, or cloud Terraform.
+derived `ExecutionDiff` format `0.1.0` are independent contracts. The working tree supports
+explicit validation/replay dispatch for Replay Capsule `0.1.0` and `0.2.0`. `0.2.0` adds generic ordered tool capture/replay with
+reject-by-default sensitive request identity and a bounded `TimeoutError` replay mapping. Exact
+replay additively emits a structured diff after validated execution and complete fixture
+consumption. One separate real application proves the package/API seam, but
+TraceForge still has no arbitrary LangGraph instrumentation, fork replay, live replay, hosted
+service, authentication, cloud/production Kubernetes, or cloud Terraform.
+
+The local Workbench can now read original captures through `--assembly-database` or the Compose
+`TRACEFORGE_ASSEMBLY_PATH` configuration. It represents incomplete, missing, invalid, and verified
+evidence separately and opens assembly SQLite only in read-only mode. Unconfigured, unavailable,
+ready-empty, and ready-populated sources are distinct; replay-attempt history remains independent.
+A trusted startup capsule root
+allows a host Workbench to resolve container-local absolute references against the same persisted
+capsule directory without exposing path selection to the browser.
 
 ## Confirmed Decisions
 
@@ -78,6 +94,8 @@ authentication, cloud/production Kubernetes, or cloud Terraform.
   integration proof and must stay behind a thin adapter boundary.
 - ADR-0009 defines `ExecutionDiff` as derived runtime data, keeps exact replay technical status and
   regression evaluation separate, and leaves Replay Capsule schemas unchanged.
+- ADR-0010 makes the original captured run the Workbench's primary entity, keeps replay history as
+  attempts only, and preserves sealed capsule files as the evidence source.
 
 ## Current Assumptions
 
@@ -93,6 +111,9 @@ authentication, cloud/production Kubernetes, or cloud Terraform.
 - Tool results requiring transformation cannot become v0.5 exact-replay evidence; no generic
   application-owned result sanitizer/projection contract exists.
 - Fork replay and framework-specific graph/message/tool presentation are not implemented.
+- Workbench run detail has no persisted replay observation, structured diff, or assertion detail;
+  those records remain live derived replay results. Original runs also have no durable runner
+  association.
 - Pre-existing follow-up technical debt outside Issue #3: `ReplayResult` observation export alias
   hardening and `RegressionResult`/`AssertionResult` expected/actual snapshot alias hardening.
 - Sanitization remains best effort and still requires human review before fixtures are shared.
