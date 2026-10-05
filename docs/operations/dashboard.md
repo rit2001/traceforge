@@ -12,7 +12,9 @@ The Workbench has three top-level views:
 - **Exact Replay Lab** runs one trusted startup-registered runner against reviewed evidence.
 - **Replay attempts** come from `replay_history` and never create or replace original runs.
   Opening Replay Attempts refreshes this list from the authoritative `/api/history` endpoint, so a
-  replay completed in the current page appears without a browser reload.
+  replay completed in the current page appears without a browser reload. Historical attempts stay
+  visible when a custom runner is no longer registered, but show **Runner unavailable** instead of
+  an action that cannot succeed.
 
 The browser receives presentation-neutral JSON. It does not query SQLite, open capsule paths, or
 compute integrity, replay, diff, or regression semantics.
