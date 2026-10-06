@@ -285,6 +285,7 @@ textarea { width: 100%; min-height: 105px; resize: vertical; padding: 9px; borde
 .attempt-status, .attempt-verdict { font-weight: 700; }
 .attempt-status.good, .attempt-verdict.good { color: var(--green); }
 .attempt-status.bad, .attempt-verdict.bad { color: var(--red); }
+.runner-unavailable { color: var(--muted); font-weight: 650; }
 .history-empty { display: grid; max-width: 720px; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 13px; margin: 15px 0 0; padding: 16px; border: 1px solid #dde2ea; border-radius: 8px; background: #fafbfc; color: #70798c; font-size: .75rem; }
 .history-empty svg { width: 24px; height: 24px; fill: #8993a7; }
 .history-empty p { margin: 3px 0 0; }

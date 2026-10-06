@@ -916,6 +916,26 @@ def test_attempts_navigation_refreshes_authoritative_history_without_page_reload
     assert "renderHistory(await response.json())" in initially_loaded_page
 
 
+def test_history_keeps_attempt_but_disables_action_for_unregistered_runner(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "history.sqlite3"
+    SQLiteReplayHistory(database).append(
+        capsule_digest="sha256:historical-custom-runner",
+        runner="removed-custom-runner",
+        technical_result="completed",
+        behavioural_result="passed",
+        error_summary=None,
+    )
+
+    page = TestClient(create_app(database)).get("/").text
+
+    assert "removed-custom-runner" in page
+    assert "Runner unavailable" in page
+    assert 'data-history-runner="removed-custom-runner"' not in page
+    assert "registeredRunnerIds.has(attempt.runner)" in page
+
+
 @pytest.mark.parametrize("runner_id", RUNNERS)
 def test_each_builtin_example_is_loadable_and_replays(tmp_path: Path, runner_id: str) -> None:
     client = TestClient(create_app(tmp_path / "history.sqlite3"))

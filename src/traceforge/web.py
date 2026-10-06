@@ -278,6 +278,7 @@ def create_app(
                 "history": history.recent(),
                 "run_source": catalog.source_dict(),
                 "runs": [run.to_dict() for run in catalog.runs],
+                "registered_runner_ids": tuple(registry),
                 "runners": [metadata.public() for metadata in registry.values()],
             },
         )
