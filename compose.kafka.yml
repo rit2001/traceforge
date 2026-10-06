@@ -63,6 +63,8 @@ services:
       - ${TRACEFORGE_DATA_DIR:-./.traceforge-data}:/data
     environment:
       TRACEFORGE_HISTORY_PATH: /data/history.sqlite3
+      TRACEFORGE_ASSEMBLY_PATH: /data/assembly.sqlite3
+      TRACEFORGE_CAPSULE_DIRECTORY: /data/capsules
       OTEL_SDK_DISABLED: "false"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OTEL_EXPORTER_OTLP_INSECURE: "true"

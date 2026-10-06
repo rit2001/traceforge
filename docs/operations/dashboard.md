@@ -5,6 +5,112 @@ accepts only a runner registered when the process starts, uses reviewed JSON evi
 falls back to a live model or tool call. It is not a sandbox: a custom runner is trusted local
 Python code with the server process's authority.
 
+The Workbench has three top-level views:
+
+- **Original runs** come from the capture worker's SQLite assembly state and point to sealed
+  filesystem Replay Capsules.
+- **Exact Replay Lab** runs one trusted startup-registered runner against reviewed evidence.
+- **Replay attempts** come from `replay_history` and never create or replace original runs.
+  Opening Replay Attempts refreshes this list from the authoritative `/api/history` endpoint, so a
+  replay completed in the current page appears without a browser reload. Historical attempts stay
+  visible when a custom runner is no longer registered, but show **Runner unavailable** instead of
+  an action that cannot succeed.
+
+The browser receives presentation-neutral JSON. It does not query SQLite, open capsule paths, or
+compute integrity, replay, diff, or regression semantics.
+
+## Start with an original-run catalog
+
+Point the server at the assembly database written by the local capture worker:
+
+```sh
+traceforge serve \
+  --assembly-database .traceforge-data/assembly.sqlite3 \
+  --capsule-directory .traceforge-data/capsules
+```
+
+The optional distributed Compose stack supplies `/data/assembly.sqlite3` through
+`TRACEFORGE_ASSEMBLY_PATH` and `/data/capsules` through `TRACEFORGE_CAPSULE_DIRECTORY`. A host
+Workbench reading that Compose-produced database must point its trusted capsule directory at the
+host side of the same volume. Without an assembly database the Workbench shows an empty
+original-run view while the existing replay lab remains available. The UI distinguishes no
+configured source, an unavailable configured source, and a valid source with zero captures.
+
+For the repository's default local data directory:
+
+```sh
+TRACEFORGE_ASSEMBLY_PATH="$PWD/.traceforge-data/assembly.sqlite3" \
+TRACEFORGE_CAPSULE_DIRECTORY="$PWD/.traceforge-data/capsules" \
+TRACEFORGE_HISTORY_PATH="$PWD/.traceforge-data/history.sqlite3" \
+traceforge serve --host 127.0.0.1 --port 18000
+```
+
+## Recreate the controlled manual-review catalog
+
+The developer-only generator creates one synthetic, reviewed Replay Capsule `0.2.0` run with the
+subject **Agentic Chatbot — Controlled Demo** and a model → `tool:web.search` → model dependency
+sequence. It uses no Kafka, Docker, network access, or external API. Generated databases and
+capsules stay outside the repository and are not committed.
+
+From the repository root:
+
+```sh
+python scripts/create_workbench_review_data.py \
+  --output ~/.traceforge/workbench-review
+
+TRACEFORGE_ASSEMBLY_PATH="$HOME/.traceforge/workbench-review/assembly.sqlite3" \
+TRACEFORGE_CAPSULE_DIRECTORY="$HOME/.traceforge/workbench-review/capsules" \
+TRACEFORGE_HISTORY_PATH="$HOME/.traceforge/workbench-review/history.sqlite3" \
+traceforge serve --host 127.0.0.1 --port 18000
+```
+
+The generator safely replaces only a directory carrying its ownership marker and refuses output
+inside the repository or a directory containing unrelated files. Re-running it restores a clean
+catalog with exactly one original run and an empty replay-attempt history.
+
+Use these steps for the three manual-review states:
+
+1. Open `http://127.0.0.1:18000/#runs` and inspect **Agentic Chatbot — Controlled Demo**. Its
+   execution map contains model → `web.search` → model and its evidence is completed, sealed,
+   integrity verified, and replayable.
+2. Open `http://127.0.0.1:18000/#replay`, select **Weather Grounding**, choose **Load verified
+   example**, then choose **Run exact replay**. Inspect the returned technical status,
+   deterministic match, `ExecutionDiff`, and regression assertions.
+3. Open `http://127.0.0.1:18000/#attempts` and refresh once. The completed replay appears in the
+   persisted replay-attempt history.
+
+The catalog preserves a recorded capsule path when it exists in the current process environment.
+If a container-local path such as `/data/capsules/<capture-id>.json` does not exist on the host, it
+resolves only `<capture-id>.json` under the trusted startup capsule directory. Invalid capture IDs,
+path traversal, and symlink escape are rejected. No HTTP input can set this directory, and no raw
+path is returned by the API.
+
+The read-only endpoints are:
+
+```text
+GET /api/runs
+GET /api/runs/{run_id}
+GET /api/run-source
+```
+
+`GET /api/run-source` returns only `state`, a bounded reason code, and `run_count`; it never returns
+the configured database or capsule path. Assembly SQLite is opened with SQLite read-only mode.
+A nonexistent configured path is reported as unavailable and is never created by a catalog read.
+
+Run detail includes operational completion/correlation metadata and validated capsule-derived
+invocation, original execution, ordered dependencies, output, and evidence metadata. It never
+returns the capsule filesystem path. Unknown run IDs return `run-not-found` with HTTP 404.
+
+Evidence states are explicit:
+
+- `pending`: capture is incomplete;
+- `missing`: a completed capture has no usable capsule reference or file;
+- `invalid`: the referenced file cannot pass existing capsule validation; and
+- `verified`: the sealed capsule passed structural, semantic, fingerprint, and integrity checks.
+
+`replayable` additionally requires the existing recorded-tool-error preflight. It does not imply
+that a matching application runner has been registered.
+
 ## Start and register a local runner
 
 The three built-in demos are available by default. Register a project runner only through the
@@ -18,6 +124,10 @@ traceforge serve --runner my-agent=my_project.traceforge_runner:run
 Duplicate IDs (including built-ins), malformed registrations, and import failures stop startup.
 The browser, an upload, a capsule, and an HTTP request cannot provide module paths or import code.
 Custom runners have no synthetic example: upload or paste reviewed evidence from that project.
+
+The browser cannot provide `--assembly-database`, `TRACEFORGE_ASSEMBLY_PATH`,
+`--capsule-directory`, `TRACEFORGE_CAPSULE_DIRECTORY`, a capsule path, or a runner import. Those are
+trusted process-startup boundaries only.
 
 ## Capture to replay
 
@@ -48,3 +158,23 @@ blocks common Python socket entry points.
 Built-in demonstrations use one canonical reviewed source under `examples/`; package installation
 places those JSON files under the TraceForge data directory so the wheel and Docker image offer
 the same examples. Fixtures are sanitized but best-effort redaction cannot prove secret absence.
+
+## Current Workbench limitations
+
+- Run summaries synchronously read and validate every referenced capsule on each catalog request.
+  One malformed or unreadable capsule is isolated as `invalid`, but a large capsule or large local
+  catalog can delay the entire response; size bounds, pagination, and cached projections are
+  deferred until measured need.
+- Files in a cloud-managed or optimized local directory must be materially present. On macOS a
+  `dataless` placeholder may block while the operating system tries to retrieve its contents;
+  materialize the file or use a resident local review directory before launching Workbench.
+- Current assembly rows store service-local absolute paths. The startup capsule-root fallback is
+  backward compatible, but a portable durable reference remains follow-up storage debt.
+- Replay history stores compact attempt summaries, not replay observations, `ExecutionDiff`, or
+  assertion details. A structured diff is shown from a live successful replay response but is not
+  persisted into original evidence.
+- Original runs do not yet retain an application-runner association, so run detail does not expose
+  a replay button that could guess which runner to use.
+- Trace/span IDs are displayed when assembly state contains them; parent-child spans and causal or
+  multi-agent graphs are not implemented.
+- The service remains localhost-first and unauthenticated. Do not expose it publicly.

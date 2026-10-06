@@ -47,6 +47,16 @@ def _parser() -> argparse.ArgumentParser:
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", default=8000, type=int)
     serve.add_argument(
+        "--assembly-database",
+        type=Path,
+        help="read original-run metadata from the local capture assembly database",
+    )
+    serve.add_argument(
+        "--capsule-directory",
+        type=Path,
+        help="resolve relocated capsule references under this trusted local directory",
+    )
+    serve.add_argument(
         "--runner",
         action="append",
         default=[],
@@ -94,6 +104,8 @@ def main(argv: list[str] | None = None) -> int:
             from traceforge.observability import configure, shutdown
             from traceforge.web import create_app
 
+            configured_assembly = os.environ.get("TRACEFORGE_ASSEMBLY_PATH")
+            configured_capsules = os.environ.get("TRACEFORGE_CAPSULE_DIRECTORY")
             telemetry_provider = configure("traceforge-api")
             try:
                 uvicorn.run(
@@ -105,6 +117,20 @@ def main(argv: list[str] | None = None) -> int:
                             )
                         ),
                         runner_registrations=args.runner,
+                        assembly_database=(
+                            args.assembly_database
+                            if args.assembly_database is not None
+                            else (
+                                None if configured_assembly is None else Path(configured_assembly)
+                            )
+                        ),
+                        capsule_directory=(
+                            args.capsule_directory
+                            if args.capsule_directory is not None
+                            else (
+                                None if configured_capsules is None else Path(configured_capsules)
+                            )
+                        ),
                     ),
                     host=args.host,
                     port=args.port,
