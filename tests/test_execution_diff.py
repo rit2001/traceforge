@@ -20,6 +20,12 @@ def diff_api() -> ModuleType:
     return importlib.import_module("traceforge.diff")
 
 
+@pytest.fixture
+def divergence_api() -> ModuleType:
+    """Load the Issue #4 API; absence is the intentional RED-phase failure."""
+    return importlib.import_module("traceforge.divergence")
+
+
 def _observation(
     *,
     status: str = "completed",
@@ -108,6 +114,17 @@ def _result(
 
 def _document(diff_api: ModuleType, **kwargs: Any) -> dict[str, Any]:
     return _result(diff_api, **kwargs).to_dict()
+
+
+def _analysis_document(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+    **kwargs: Any,
+) -> tuple[Any, dict[str, Any]]:
+    execution_diff = _result(diff_api, **kwargs)
+    analysis = divergence_api.analyze_divergence(execution_diff)
+    assert isinstance(analysis, divergence_api.DivergenceAnalysis)
+    return analysis, analysis.to_dict()
 
 
 def _differences(document: dict[str, Any], code: str | None = None) -> list[dict[str, Any]]:
@@ -1067,3 +1084,364 @@ def test_core_diff_source_has_no_framework_specific_dependencies() -> None:
         "aimessage",
     )
     assert not {term for term in prohibited if term in source}
+
+
+def test_matching_diff_analysis_reports_no_semantic_divergence(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+) -> None:
+    _, document = _analysis_document(diff_api, divergence_api)
+
+    assert document == {
+        "format_version": "0.1.0",
+        "matches": True,
+        "domains": {
+            "execution": {"matches": True, "difference_count": 0, "first_path": None},
+            "dependencies": {"matches": True, "difference_count": 0, "first_path": None},
+            "events": {"matches": True, "difference_count": 0, "first_path": None},
+            "terminal": {"matches": True, "difference_count": 0, "first_path": None},
+        },
+        "evidence_context": {
+            "recorded_dependencies_reproduced": False,
+            "replay_completed_technically": False,
+        },
+        "findings": ["no_semantic_divergence"],
+        "limitations": [
+            "no_global_chronology",
+            "no_root_cause_claim",
+            "no_cross_domain_causality",
+        ],
+    }
+
+
+def test_divergence_analysis_api_is_available_from_package_root(
+    divergence_api: ModuleType,
+) -> None:
+    from traceforge import DivergenceAnalysis, analyze_divergence
+
+    assert DivergenceAnalysis is divergence_api.DivergenceAnalysis
+    assert analyze_divergence is divergence_api.analyze_divergence
+
+
+def test_public_analysis_cannot_forge_exact_replay_provenance(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+) -> None:
+    execution_diff = _result(diff_api)
+
+    assert tuple(inspect.signature(divergence_api.analyze_divergence).parameters) == (
+        "execution_diff",
+    )
+    with pytest.raises(TypeError):
+        divergence_api.analyze_divergence(execution_diff, exact_replay_completed=True)
+    assert "_analyze_exact_replay_divergence" not in importlib.import_module("traceforge").__dict__
+
+
+def test_terminal_only_divergence_has_only_terminal_finding(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+) -> None:
+    _, document = _analysis_document(
+        diff_api,
+        divergence_api,
+        original_observation=_observation(output={"value": "original"}),
+        replay_observation=_observation(output={"value": "replay"}),
+    )
+
+    assert document["findings"] == ["terminal_output_diverged"]
+    assert document["domains"]["terminal"] == {
+        "matches": False,
+        "difference_count": 1,
+        "first_path": "/output/value",
+    }
+    assert all(
+        document["domains"][name]["matches"] for name in ("execution", "dependencies", "events")
+    )
+
+
+def test_event_only_divergence_has_only_event_finding(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+) -> None:
+    _, document = _analysis_document(
+        diff_api,
+        divergence_api,
+        original_observation=_observation(events=[_event(1)]),
+        replay_observation=_observation(events=[]),
+    )
+
+    assert document["findings"] == ["event_stream_diverged"]
+    assert document["domains"]["events"] == {
+        "matches": False,
+        "difference_count": 1,
+        "first_path": "/events/0",
+    }
+
+
+def test_execution_status_divergence_has_execution_finding(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+) -> None:
+    _, document = _analysis_document(
+        diff_api,
+        divergence_api,
+        original_observation=_observation(status="completed"),
+        replay_observation=_observation(
+            status="errored",
+            error={"type": "ControlledError", "message": "replay failed", "data": None},
+        ),
+    )
+
+    assert document["findings"] == ["execution_diverged"]
+    assert document["domains"]["execution"]["matches"] is False
+    assert document["domains"]["execution"]["first_path"] == "/execution_status"
+
+
+def test_events_and_terminal_keep_independent_first_paths_without_global_ranking(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+) -> None:
+    execution_diff = _result(
+        diff_api,
+        original_observation=_observation(
+            events=[_event(1)],
+            output={"value": "original"},
+        ),
+        replay_observation=_observation(events=[], output={"value": "replay"}),
+    )
+    diff_document = execution_diff.to_dict()
+    analysis = divergence_api.analyze_divergence(execution_diff)
+    document = analysis.to_dict()
+
+    assert document["findings"] == [
+        "event_stream_diverged",
+        "terminal_output_diverged",
+    ]
+    assert document["domains"]["events"]["first_path"] == "/events/0"
+    assert document["domains"]["terminal"]["first_path"] == "/output/value"
+    assert (
+        document["domains"]["events"]["first_path"]
+        == (diff_document["first_divergences"]["events"])
+    )
+    assert (
+        document["domains"]["terminal"]["first_path"]
+        == (diff_document["first_divergences"]["terminal"])
+    )
+    for name in ("execution", "dependencies", "events", "terminal"):
+        assert document["domains"][name]["first_path"] == (diff_document["first_divergences"][name])
+    assert set(document) == {
+        "format_version",
+        "matches",
+        "domains",
+        "evidence_context",
+        "findings",
+        "limitations",
+    }
+    assert "global_first_divergence" not in document
+    assert "first_divergence" not in document
+    assert "event_caused_terminal" not in document["findings"]
+    assert "caused" not in str(document).lower()
+
+
+def test_standalone_dependency_divergence_does_not_claim_exact_replay_context(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+) -> None:
+    _, document = _analysis_document(
+        diff_api,
+        divergence_api,
+        recorded_dependencies=[_dependency(1, request={"value": "recorded"})],
+        replay_dependencies=[_dependency(1, request={"value": "replay"})],
+    )
+
+    assert document["findings"] == ["dependency_stream_diverged"]
+    assert document["domains"]["dependencies"]["first_path"] == ("/dependencies/0/request/value")
+    assert document["evidence_context"] == {
+        "recorded_dependencies_reproduced": False,
+        "replay_completed_technically": False,
+    }
+
+
+def test_analysis_exports_are_alias_isolated_from_source_diff(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+) -> None:
+    execution_diff = _result(
+        diff_api,
+        original_observation=_observation(output={"value": "original"}),
+        replay_observation=_observation(output={"value": "replay"}),
+    )
+    source_before = execution_diff.to_dict()
+    mutated_source_export = execution_diff.to_dict()
+    mutated_source_export["sections"]["terminal"]["matches"] = True
+    mutated_source_export["first_divergences"]["terminal"] = None
+    mutated_source_export["differences"].clear()
+    analysis = divergence_api.analyze_divergence(execution_diff)
+    exported = analysis.to_dict()
+    canonical_before = analysis.canonical_bytes()
+
+    exported["domains"]["terminal"]["first_path"] = "/mutated"
+    exported["findings"].append("invented_cause")
+
+    assert analysis.to_dict()["domains"]["terminal"]["first_path"] == "/output/value"
+    assert analysis.to_dict()["findings"] == ["terminal_output_diverged"]
+    assert analysis.canonical_bytes() == canonical_before
+    assert execution_diff.to_dict() == source_before
+
+
+def test_analysis_rejects_execution_diff_without_trusted_compact_metadata(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+) -> None:
+    valid_document = _result(diff_api).to_dict()
+    reconstructed = diff_api.ExecutionDiff(canonicalize(valid_document))
+
+    with pytest.raises(IntegrityError, match="trusted analysis metadata"):
+        divergence_api.analyze_divergence(reconstructed)
+
+
+def test_analysis_reads_only_compact_diff_metadata(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_diff = _result(
+        diff_api,
+        original_observation=_observation(output={"large": "x" * 100_000}),
+        replay_observation=_observation(output={"large": "y" * 100_000}),
+    )
+
+    def reject_full_export(instance: Any) -> None:
+        del instance
+        raise AssertionError("analysis must not deserialize the complete ExecutionDiff")
+
+    monkeypatch.setattr(diff_api.ExecutionDiff, "to_dict", reject_full_export)
+
+    document = divergence_api.analyze_divergence(execution_diff).to_dict()
+
+    assert document["domains"]["terminal"]["difference_count"] == 1
+    assert document["domains"]["terminal"]["first_path"] == "/output/large"
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        pytest.param(
+            lambda summary: summary.update(format_version="9.9.9"),
+            "requires ExecutionDiff 0.1.0",
+            id="future-version",
+        ),
+        pytest.param(
+            lambda summary: summary["sections"].pop("events"),
+            "exactly the supported domains",
+            id="missing-domain",
+        ),
+        pytest.param(
+            lambda summary: summary["first_divergences"].update(events="/events/0"),
+            "first divergence is inconsistent",
+            id="matched-with-first-path",
+        ),
+        pytest.param(
+            lambda summary: summary["sections"]["events"].update(difference_count=1),
+            "match summary is inconsistent",
+            id="matched-with-difference-count",
+        ),
+        pytest.param(
+            lambda summary: summary.update(future_field=True),
+            "unsupported contract shape",
+            id="future-top-level-field",
+        ),
+        pytest.param(
+            lambda summary: summary["sections"]["events"].update(future_field=True),
+            "exactly the supported fields",
+            id="future-section-field",
+        ),
+        pytest.param(
+            lambda summary: (
+                summary["sections"]["events"].update(matches=False, difference_count=1),
+                summary["first_divergences"].update(events="/output/not-an-event"),
+                summary.update(matches=False),
+            ),
+            "wrong domain path",
+            id="wrong-domain-first-path",
+        ),
+    ],
+)
+def test_analysis_fails_closed_on_malformed_or_future_compact_diff_contract(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+    mutation: Any,
+    message: str,
+) -> None:
+    valid = _result(diff_api)
+    document = valid.to_dict()
+    summary = {
+        "format_version": document["format_version"],
+        "matches": document["matches"],
+        "sections": copy.deepcopy(document["sections"]),
+        "first_divergences": copy.deepcopy(document["first_divergences"]),
+    }
+    mutation(summary)
+    malformed = diff_api.ExecutionDiff(
+        canonicalize(document),
+        canonicalize(summary),
+    )
+
+    with pytest.raises(IntegrityError, match=message):
+        divergence_api.analyze_divergence(malformed)
+
+
+@pytest.mark.parametrize("metadata", [b"{", b'{"matches":true} '])
+def test_analysis_rejects_invalid_or_noncanonical_compact_metadata(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+    metadata: bytes,
+) -> None:
+    valid = _result(diff_api)
+    malformed = diff_api.ExecutionDiff(canonicalize(valid.to_dict()), metadata)
+
+    with pytest.raises(IntegrityError, match="valid JSON|canonical JSON"):
+        divergence_api.analyze_divergence(malformed)
+
+
+def test_findings_are_deterministic_and_cannot_contradict_domains(
+    diff_api: ModuleType,
+    divergence_api: ModuleType,
+) -> None:
+    _, matching = _analysis_document(diff_api, divergence_api)
+    _, diverged = _analysis_document(
+        diff_api,
+        divergence_api,
+        original_observation=_observation(
+            status="completed",
+            events=[_event(1)],
+            output={"value": "original"},
+        ),
+        replay_observation=_observation(
+            status="errored",
+            events=[],
+            output={"value": "replay"},
+            error={"type": "ControlledError", "message": "failed", "data": None},
+        ),
+        recorded_dependencies=[_dependency(1, request={"value": "recorded"})],
+        replay_dependencies=[_dependency(1, request={"value": "replay"})],
+    )
+
+    assert matching["findings"] == ["no_semantic_divergence"]
+    assert diverged["findings"] == [
+        "execution_diverged",
+        "dependency_stream_diverged",
+        "event_stream_diverged",
+        "terminal_output_diverged",
+    ]
+    assert "no_semantic_divergence" not in diverged["findings"]
+    assert "recorded_dependencies_reproduced" not in diverged["findings"]
+    assert (
+        diverged["limitations"]
+        == matching["limitations"]
+        == [
+            "no_global_chronology",
+            "no_root_cause_claim",
+            "no_cross_domain_causality",
+        ]
+    )

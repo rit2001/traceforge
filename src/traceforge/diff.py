@@ -30,12 +30,27 @@ class ExecutionDiff:
     """Alias-isolated structured execution comparison result."""
 
     _canonical_document: bytes = field(repr=False)
+    _canonical_analysis_metadata: bytes | None = field(default=None, repr=False)
 
     def to_dict(self) -> dict[str, Any]:
         """Return a newly allocated JSON-compatible representation."""
         document = json.loads(self._canonical_document)
         if not isinstance(document, dict):  # pragma: no cover - construction invariant
             raise IntegrityError("ExecutionDiff must contain a JSON object")
+        return document
+
+    def _analysis_summary(self) -> dict[str, Any]:
+        """Return compact metadata retained by the trusted comparator."""
+        if self._canonical_analysis_metadata is None:
+            raise IntegrityError("ExecutionDiff has no trusted analysis metadata")
+        try:
+            document = json.loads(self._canonical_analysis_metadata)
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise IntegrityError("ExecutionDiff analysis metadata is not valid JSON") from exc
+        if not isinstance(document, dict):  # pragma: no cover - construction invariant
+            raise IntegrityError("ExecutionDiff analysis metadata must contain a JSON object")
+        if canonicalize(document) != self._canonical_analysis_metadata:
+            raise IntegrityError("ExecutionDiff analysis metadata must use canonical JSON")
         return document
 
 
@@ -610,4 +625,10 @@ def compare_execution(
         },
         "differences": differences,
     }
-    return ExecutionDiff(canonicalize(document))
+    analysis_metadata = {
+        "format_version": document["format_version"],
+        "matches": document["matches"],
+        "sections": document["sections"],
+        "first_divergences": document["first_divergences"],
+    }
+    return ExecutionDiff(canonicalize(document), canonicalize(analysis_metadata))

@@ -10,12 +10,14 @@ The replay feasibility implementation, optional local distributed-ingestion and 
 
 `v0.5.0 — Real Agent Capture` is active. Issue #2's generic tool dependency primitive, Issue #1's
 separate real Agentic-chatbot integration proof, and Issue #3's portable structured execution diff
-are complete. Workbench V1 Phase 1 provides an original-run catalog, explicit evidence states,
-read-only run APIs, explicit original-run source health, a reproducible controlled review catalog,
-and the first execution-forensics Run Detail page over existing assembly state and sealed capsules.
-Exact replay collects a detached successful-consumption dependency transcript and attaches
-additive `ExecutionDiff` values to each technically successful `ReplayResult`. Replay Capsule
-schemas remain unchanged, and the core remains framework-neutral.
+are complete. Issue #4 adds evidence-backed divergence analysis derived from that diff without a
+second comparator, global first divergence, root-cause claim, or cross-domain causal claim.
+Workbench V1 Phase 1 provides an original-run catalog, explicit evidence states, read-only run
+APIs, explicit original-run source health, a reproducible controlled review catalog, and the first
+execution-forensics Run Detail page over existing assembly state and sealed capsules. Exact replay
+collects a detached successful-consumption dependency transcript and attaches additive
+`ExecutionDiff` and `DivergenceAnalysis` values to each technically successful `ReplayResult`.
+Replay Capsule schemas remain unchanged, and the core remains framework-neutral.
 
 The release aligned package, CLI, Docker, CI, public documentation, license, contributor framework, artifacts, installation, localhost workbench, Kafka topic configuration, and bounded publication-safety surfaces. It did not redesign replay semantics, implement fork replay, or add production-readiness claims.
 
@@ -44,6 +46,11 @@ The release aligned package, CLI, Docker, CI, public documentation, license, con
 - v0.5 Issue #3 portable structured execution diff: ADR-0009's framework-neutral `ExecutionDiff`,
   conservative dependency/event alignment, detached successful-consumption transcript, and
   additive exact-replay result integration are implemented without changing either capsule schema.
+- v0.5 Issue #4 evidence-backed divergence analysis: ADR-0011's immutable versioned
+  `DivergenceAnalysis` copies match state, difference counts, and section-scoped first paths from
+  `ExecutionDiff`; exact replay adds bounded recorded-dependency reproduction context only after
+  technical success. Workbench presents the analysis before the complete structured diff while
+  explicitly refusing global chronology, root-cause, and cross-domain causal claims.
 - Workbench V1 Phase 1: ADR-0010 separates original runs from replay attempts, reads capture
   metadata from assembly SQLite, validates referenced sealed capsules, exposes read-only run APIs,
   distinguishes unavailable sources from valid empty catalogs, and renders a real Run
@@ -56,12 +63,13 @@ Documentation, Replay Capsule `0.1.0` and `0.2.0` schemas, the Capture Event sch
 
 The documented release state is on `main`; retained branch `release/v0.4.1` and tag `v0.4.1` point to the verified release commit.
 
-The published distribution remains `0.4.1`; Replay Capsule versions, Capture Event `0.2.0`, and
-derived `ExecutionDiff` format `0.1.0` are independent contracts. The working tree supports
-explicit validation/replay dispatch for Replay Capsule `0.1.0` and `0.2.0`. `0.2.0` adds generic ordered tool capture/replay with
+The published distribution remains `0.4.1`; Replay Capsule versions, Capture Event `0.2.0`,
+derived `ExecutionDiff` format `0.1.0`, and derived `DivergenceAnalysis` format `0.1.0` are
+independent contracts. The working tree supports explicit validation/replay dispatch for Replay
+Capsule `0.1.0` and `0.2.0`. `0.2.0` adds generic ordered tool capture/replay with
 reject-by-default sensitive request identity and a bounded `TimeoutError` replay mapping. Exact
-replay additively emits a structured diff after validated execution and complete fixture
-consumption. One separate real application proves the package/API seam, but
+replay additively emits a structured diff and its bounded analysis after validated execution and
+complete fixture consumption. One separate real application proves the package/API seam, but
 TraceForge still has no arbitrary LangGraph instrumentation, fork replay, live replay, hosted
 service, authentication, cloud/production Kubernetes, or cloud Terraform.
 
@@ -96,6 +104,9 @@ capsule directory without exposing path selection to the browser.
   regression evaluation separate, and leaves Replay Capsule schemas unchanged.
 - ADR-0010 makes the original captured run the Workbench's primary entity, keeps replay history as
   attempts only, and preserves sealed capsule files as the evidence source.
+- ADR-0011 makes `DivergenceAnalysis` a versioned derivation from `ExecutionDiff`, preserves one
+  first path per evidence domain, and prohibits global chronology, root-cause, and cross-domain
+  causal claims from today's evidence.
 
 ## Current Assumptions
 
@@ -112,8 +123,11 @@ capsule directory without exposing path selection to the browser.
   application-owned result sanitizer/projection contract exists.
 - Fork replay and framework-specific graph/message/tool presentation are not implemented.
 - Workbench run detail has no persisted replay observation, structured diff, or assertion detail;
-  those records remain live derived replay results. Original runs also have no durable runner
-  association.
+  divergence analysis and those records remain live derived replay results. Original runs also
+  have no durable runner association.
+- Current evidence domains do not share a proven chronology and carry no causal-span or verifier
+  relationship, so divergence analysis cannot identify a root cause or rank one domain as globally
+  earliest.
 - Pre-existing follow-up technical debt outside Issue #3: `ReplayResult` observation export alias
   hardening and `RegressionResult`/`AssertionResult` expected/actual snapshot alias hardening.
 - Sanitization remains best effort and still requires human review before fixtures are shared.

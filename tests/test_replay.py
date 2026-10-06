@@ -4,11 +4,13 @@ import copy
 import socket
 from pathlib import Path
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
 from traceforge.dependencies import RecordedDependencyAdapter
 from traceforge.diff import ExecutionDiff
+from traceforge.divergence import DivergenceAnalysis
 from traceforge.examples.weather_agent import run as weather_runner
 from traceforge.exceptions import (
     DependencyMismatchError,
@@ -40,6 +42,14 @@ def _contains_key(value: Any, key: str) -> bool:
     if isinstance(value, list):
         return any(_contains_key(item, key) for item in value)
     return False
+
+
+def _reject_completed_analysis(monkeypatch: pytest.MonkeyPatch) -> Mock:
+    analysis = Mock(
+        side_effect=AssertionError("technical replay failure cannot produce divergence analysis")
+    )
+    monkeypatch.setattr("traceforge.replay._analyze_exact_replay_divergence", analysis)
+    return analysis
 
 
 def test_successful_exact_replay_and_behavioural_pass() -> None:
@@ -87,6 +97,7 @@ def test_replay_result_preserves_pre_execution_diff_constructor_shape() -> None:
         },
         "regression": None,
         "execution_diff": None,
+        "divergence_analysis": None,
     }
 
 
@@ -111,6 +122,7 @@ def test_successful_exact_replay_adds_structured_diff_without_changing_existing_
     document = result.to_dict()
 
     assert isinstance(result.execution_diff, ExecutionDiff)
+    assert isinstance(result.divergence_analysis, DivergenceAnalysis)
     assert result.execution_diff.to_dict()["matches"] is True
     assert result.technical_status == "completed"
     assert result.original_observation == capsule_before["original_observation"]
@@ -132,6 +144,20 @@ def test_successful_exact_replay_adds_structured_diff_without_changing_existing_
     }
     assert document["regression"] == result.regression.to_dict()
     assert document["execution_diff"] == result.execution_diff.to_dict()
+    assert document["divergence_analysis"] == result.divergence_analysis.to_dict()
+    assert document["divergence_analysis"]["evidence_context"] == {
+        "recorded_dependencies_reproduced": True,
+        "replay_completed_technically": True,
+    }
+    assert document["divergence_analysis"]["findings"] == [
+        "recorded_dependencies_reproduced",
+        "no_semantic_divergence",
+    ]
+    assert document["divergence_analysis"]["matches"] is True
+    assert all(
+        domain["matches"] and domain["first_path"] is None
+        for domain in document["divergence_analysis"]["domains"].values()
+    )
     assert "regression" not in document["execution_diff"]
     assert _contains_key(document["execution_diff"], "assertions") is False
     assert capsule == capsule_before
@@ -158,6 +184,7 @@ def test_successful_replay_observation_divergence_has_nonmatching_structured_dif
 
     result = replay_exact(capsule, CallableFrameworkAdapter(runner), regression_spec)
     execution_diff = result.execution_diff.to_dict()
+    divergence_analysis = result.divergence_analysis.to_dict()
 
     assert result.technical_status == "completed"
     assert result.deterministic_match is False
@@ -170,14 +197,25 @@ def test_successful_replay_observation_divergence_has_nonmatching_structured_dif
         for difference in execution_diff["differences"]
     ] == [("terminal", "value_changed", "/output/result")]
     assert result.regression is not None and result.regression.passed is True
+    assert divergence_analysis["findings"] == [
+        "recorded_dependencies_reproduced",
+        "terminal_output_diverged",
+    ]
+    assert divergence_analysis["domains"]["terminal"]["first_path"] == "/output/result"
+    assert divergence_analysis["evidence_context"] == {
+        "recorded_dependencies_reproduced": True,
+        "replay_completed_technically": True,
+    }
     assert capsule == capsule_before
 
 
 def test_dependency_mismatch_remains_a_technical_replay_failure_without_result(
     capsule_draft: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     capsule = seal_capsule(capsule_draft)
     completed_result = None
+    analysis = _reject_completed_analysis(monkeypatch)
 
     def runner(invocation: Any, dependencies: DependencyAdapter) -> dict[str, Any]:
         del invocation
@@ -191,16 +229,28 @@ def test_dependency_mismatch_remains_a_technical_replay_failure_without_result(
         completed_result = replay_exact(capsule, CallableFrameworkAdapter(runner))
 
     assert completed_result is None
+    analysis.assert_not_called()
 
 
 def test_replay_diff_core_remains_framework_neutral() -> None:
     core_paths = [
         REPOSITORY_ROOT / "src" / "traceforge" / "dependencies.py",
         REPOSITORY_ROOT / "src" / "traceforge" / "diff.py",
+        REPOSITORY_ROOT / "src" / "traceforge" / "divergence.py",
         REPOSITORY_ROOT / "src" / "traceforge" / "regression.py",
         REPOSITORY_ROOT / "src" / "traceforge" / "replay.py",
     ]
-    prohibited = ("langgraph", "langchain", "crewai", "stategraph", "toolmessage", "aimessage")
+    prohibited = (
+        "langgraph",
+        "langchain",
+        "crewai",
+        "autogen",
+        "stategraph",
+        "toolmessage",
+        "aimessage",
+        "supervisor",
+        "planner",
+    )
 
     for path in core_paths:
         source = path.read_text(encoding="utf-8").lower()
@@ -225,8 +275,11 @@ def test_place_a_never_receives_place_b_response() -> None:
     assert outcome["response"]["payload"]["tool_call"]["arguments"]["place"] == "Kolkata"
 
 
-def test_missing_dependency_is_rejected(capsule_draft: dict[str, Any]) -> None:
+def test_missing_dependency_is_rejected(
+    capsule_draft: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
     capsule = seal_capsule(capsule_draft)
+    analysis = _reject_completed_analysis(monkeypatch)
 
     def runner(invocation: Any, dependencies: DependencyAdapter) -> dict[str, Any]:
         del invocation, dependencies
@@ -234,10 +287,14 @@ def test_missing_dependency_is_rejected(capsule_draft: dict[str, Any]) -> None:
 
     with pytest.raises(MissingDependencyError, match="sequence 1"):
         replay_exact(capsule, CallableFrameworkAdapter(runner))
+    analysis.assert_not_called()
 
 
-def test_unexpected_extra_dependency_is_rejected(capsule_draft: dict[str, Any]) -> None:
+def test_unexpected_extra_dependency_is_rejected(
+    capsule_draft: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
     capsule = seal_capsule(capsule_draft)
+    analysis = _reject_completed_analysis(monkeypatch)
 
     def runner(invocation: Any, dependencies: DependencyAdapter) -> dict[str, Any]:
         del invocation
@@ -248,6 +305,7 @@ def test_unexpected_extra_dependency_is_rejected(capsule_draft: dict[str, Any]) 
 
     with pytest.raises(UnexpectedDependencyError, match="no recorded fixture remains"):
         replay_exact(capsule, CallableFrameworkAdapter(runner))
+    analysis.assert_not_called()
 
 
 def test_recorded_dependency_error_is_returned(capsule_draft: dict[str, Any]) -> None:
@@ -290,9 +348,12 @@ def test_capsule_tampering_fails_before_runner(capsule_draft: dict[str, Any]) ->
     assert called is False
 
 
-def test_attempted_network_access_is_blocked(capsule_draft: dict[str, Any]) -> None:
+def test_attempted_network_access_is_blocked(
+    capsule_draft: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
     capsule_draft["dependencies"] = []
     capsule = seal_capsule(capsule_draft)
+    analysis = _reject_completed_analysis(monkeypatch)
 
     def runner(invocation: Any, dependencies: DependencyAdapter) -> dict[str, Any]:
         del invocation, dependencies
@@ -301,6 +362,23 @@ def test_attempted_network_access_is_blocked(capsule_draft: dict[str, Any]) -> N
 
     with pytest.raises(LiveDependencyBlockedError, match="blocked"):
         replay_exact(capsule, CallableFrameworkAdapter(runner))
+    analysis.assert_not_called()
+
+
+def test_runner_failure_produces_no_completed_analysis(
+    capsule_draft: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    capsule_draft["dependencies"] = []
+    capsule = seal_capsule(capsule_draft)
+    analysis = _reject_completed_analysis(monkeypatch)
+
+    def runner(invocation: Any, dependencies: DependencyAdapter) -> dict[str, Any]:
+        del invocation, dependencies
+        raise RuntimeError("controlled runner failure")
+
+    with pytest.raises(RuntimeError, match="controlled runner failure"):
+        replay_exact(capsule, CallableFrameworkAdapter(runner))
+    analysis.assert_not_called()
 
 
 def test_original_observation_remains_unchanged() -> None:

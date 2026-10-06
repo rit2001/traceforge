@@ -10,6 +10,7 @@ from typing import Any
 
 from traceforge.dependencies import RecordedDependencyAdapter, assert_replayable_tool_failures
 from traceforge.diff import ExecutionDiff, compare_execution
+from traceforge.divergence import DivergenceAnalysis, _analyze_exact_replay_divergence
 from traceforge.exceptions import SemanticValidationError
 from traceforge.interfaces import DependencyAdapter, FrameworkAdapter
 from traceforge.metrics import replay as record_replay
@@ -31,6 +32,7 @@ class ReplayResult:
     deterministic_match: bool
     regression: RegressionResult | None
     execution_diff: ExecutionDiff | None = None
+    divergence_analysis: DivergenceAnalysis | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -44,6 +46,9 @@ class ReplayResult:
             "regression": None if self.regression is None else self.regression.to_dict(),
             "execution_diff": (
                 None if self.execution_diff is None else self.execution_diff.to_dict()
+            ),
+            "divergence_analysis": (
+                None if self.divergence_analysis is None else self.divergence_analysis.to_dict()
             ),
         }
 
@@ -135,5 +140,6 @@ def _replay_exact(
         ),
         regression=regression,
         execution_diff=execution_diff,
+        divergence_analysis=_analyze_exact_replay_divergence(execution_diff),
     )
     return result

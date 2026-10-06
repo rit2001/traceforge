@@ -831,6 +831,33 @@ def test_successful_replay_ui_exposes_real_diff_and_regression_records(tmp_path:
     assert "assertion.actual" in page
 
 
+def test_replay_report_leads_with_bounded_evidence_backed_analysis(tmp_path: Path) -> None:
+    client = TestClient(create_app(tmp_path / "history.sqlite3"))
+    response = client.post("/api/replay", json=_payload())
+    page = client.get("/").text
+
+    assert response.status_code == 200
+    analysis = response.json()["divergence_analysis"]
+    assert analysis["evidence_context"]["recorded_dependencies_reproduced"] is True
+    assert analysis["evidence_context"]["replay_completed_technically"] is True
+    assert "global_first_divergence" not in analysis
+    assert "Evidence-backed Divergence Analysis" in page
+    assert page.index("'Evidence-backed Divergence Analysis'") < page.index(
+        "diff.append(text('h3', 'Structured Diff'))"
+    )
+    assert "Recorded dependencies reproduced" in page
+    assert "First observed event difference" in page
+    assert "does not infer global chronology or root cause" in page
+    assert "data.divergence_analysis" in page
+    assert "Inspect structured diff" in page
+    assert "Inspect recorded dependencies" in page
+    assert "Re-run current replay" in page
+    assert "form.requestSubmit()" in page
+    assert "All portable execution domains matched" in page
+    assert "Dependency world" not in page
+    assert "external world reproduced" not in page.lower()
+
+
 def test_existing_replay_endpoint_contract_is_unchanged_with_run_catalog(tmp_path: Path) -> None:
     assembly_database, _ = _capture_run(tmp_path, capture_id="capture-for-replay")
     response = _workbench_client(tmp_path, assembly_database).post("/api/replay", json=_payload())
@@ -838,6 +865,8 @@ def test_existing_replay_endpoint_contract_is_unchanged_with_run_catalog(tmp_pat
     assert response.status_code == 200
     assert response.json()["technical_status"] == "completed"
     assert response.json()["execution_diff"]["matches"] is False
+    assert response.json()["divergence_analysis"]["domains"]["terminal"]["matches"] is False
+    assert response.json()["divergence_analysis"]["domains"]["dependencies"]["matches"] is True
     assert response.json()["regression"]["passed"] is True
 
 
