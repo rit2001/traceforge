@@ -170,7 +170,14 @@ The Go gateway and Python worker expose bounded Prometheus metrics for local ins
 
 Regression specifications are developer-authored and separate from captured evidence. They can assert final-output properties, tool-call arguments, and other supported deterministic observations. A completed replay can therefore still fail correctness evaluation.
 
-TraceForge can export a standalone pytest regression from a reviewed capsule, runner reference, and specification. AI-generated assertions are not automatically accepted as tests.
+TraceForge can explicitly promote developer-selected expectations from a technically completed,
+caller-supplied `ReplayResult` into the existing `RegressionSpec 0.1.0`, then export a standalone
+pytest regression from the sealed capsule, runner reference, and specification. The Python API
+does not attest result provenance; Workbench performs exact replay again on the server before
+building one coherent artifact bundle. Repaired behavior may differ from the historical failure;
+deterministic equality is not the same as approved correctness. Promotion requires explicit
+developer approval, never changes the Replay Capsule, and never infers or auto-accepts assertions. See
+[Regression promotion and CI](docs/regression-promotion.md).
 
 ## Controlled Examples
 

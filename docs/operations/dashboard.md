@@ -68,15 +68,21 @@ The generator safely replaces only a directory carrying its ownership marker and
 inside the repository or a directory containing unrelated files. Re-running it restores a clean
 catalog with exactly one original run and an empty replay-attempt history.
 
-Use these steps for the three manual-review states:
+Use this deterministic flow to prepare a human review; it is not a claim of visual acceptance:
 
 1. Open `http://127.0.0.1:18000/#runs` and inspect **Agentic Chatbot — Controlled Demo**. Its
    execution map contains model → `web.search` → model and its evidence is completed, sealed,
    integrity verified, and replayable.
 2. Open `http://127.0.0.1:18000/#replay`, select **Weather Grounding**, choose **Load verified
    example**, then choose **Run exact replay**. Inspect the returned technical status,
-   deterministic match, `ExecutionDiff`, and regression assertions.
-3. Open `http://127.0.0.1:18000/#attempts` and refresh once. The completed replay appears in the
+   changed deterministic match, Evidence-backed Divergence Analysis, `ExecutionDiff`, and any
+   existing regression assertions.
+3. After technical completion, choose **Promote to regression**. Confirm the assertion selection is
+   initially empty. Add only the reviewed expectation
+   `output.umbrella_needed`, choose `equals`, enter JSON value `true`, and confirm the explicit
+   developer approval. Review the generated specification and download the one atomic ZIP bundle
+   containing the unchanged capsule, specification, and pytest artifact.
+4. Open `http://127.0.0.1:18000/#attempts` and refresh once. The completed replay appears in the
    persisted replay-attempt history.
 
 The catalog preserves a recorded capsule path when it exists in the current process environment.
@@ -129,6 +135,14 @@ The browser cannot provide `--assembly-database`, `TRACEFORGE_ASSEMBLY_PATH`,
 `--capsule-directory`, `TRACEFORGE_CAPSULE_DIRECTORY`, a capsule path, or a runner import. Those are
 trusted process-startup boundaries only.
 
+Promotion likewise accepts no browser-provided server path, output directory, filename, or
+overwrite option. An existing regression specification is optional. Promotion performs exact replay
+again with the currently submitted capsule and startup-registered runner, validates only the
+assertions the developer added, and returns one content-addressed ZIP with fixed internal names.
+This prevents separate browser collision renames from mixing artifact generations. The server
+writes nothing. Trusted Python/CLI filesystem export still refuses an existing target unless
+replacement is explicitly requested.
+
 ## Capture to replay
 
 The current public APIs keep recording, sealing, and replay separate:
@@ -171,7 +185,7 @@ the same examples. Fixtures are sanitized but best-effort redaction cannot prove
 - Current assembly rows store service-local absolute paths. The startup capsule-root fallback is
   backward compatible, but a portable durable reference remains follow-up storage debt.
 - Replay history stores compact attempt summaries, not replay observations, `ExecutionDiff`, or
-  assertion details. A structured diff is shown from a live successful replay response but is not
+  assertion details. A structured diff is shown from a live technically completed replay response but is not
   persisted into original evidence.
 - Original runs do not yet retain an application-runner association, so run detail does not expose
   a replay button that could guess which runner to use.

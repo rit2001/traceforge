@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import base64
 import copy
+import io
 import json
 import sqlite3
 import sys
+import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -17,6 +20,7 @@ from scripts.create_workbench_review_data import (
 from scripts.create_workbench_review_data import create_review_data
 from traceforge import cli
 from traceforge.assembly import SQLiteAssemblyState
+from traceforge.canonical import canonicalize, capsule_integrity_digest
 from traceforge.history import SQLiteReplayHistory
 from traceforge.kafka_runtime import capsule_events
 from traceforge.sealing import seal_capsule
@@ -171,6 +175,15 @@ def test_review_data_generator_refuses_repository_runtime_evidence(tmp_path: Pat
 def _payload(runner: str = "controlled-weather") -> dict:
     example = load_builtin_example(runner)
     return {"runner": runner, "source_mode": "example", **example}
+
+
+def _bundle_entries(response: Any) -> dict[str, bytes]:
+    artifact = response.json()["regression_promotion"]["artifact"]
+    assert artifact["media_type"] == "application/zip"
+    assert artifact["filename"].startswith("traceforge-regression-")
+    assert artifact["filename"].endswith(".zip")
+    with zipfile.ZipFile(io.BytesIO(base64.b64decode(artifact["content_base64"]))) as archive:
+        return {name: archive.read(name) for name in archive.namelist()}
 
 
 def _capture_run(
@@ -809,7 +822,10 @@ def test_replay_lab_pre_result_layout_is_compact_and_truthful(tmp_path: Path) ->
     assert '<details class="project-callout">' in page
     assert '<details class="project-callout" open' not in page
     assert 'placeholder="Paste a complete sealed Replay Capsule JSON object"' in page
-    assert 'placeholder="Paste a developer-approved regression specification"' in page
+    assert (
+        'placeholder="Optionally paste an existing developer-approved regression specification"'
+        in page
+    )
     assert 'placeholder=\'{ "schema_version": "0.1.0"' not in page
 
 
@@ -829,6 +845,196 @@ def test_successful_replay_ui_exposes_real_diff_and_regression_records(tmp_path:
     assert "data.regression?.assertions" in page
     assert "assertion.expected" in page
     assert "assertion.actual" in page
+
+
+def test_workbench_promotion_requires_selected_expectations_and_confirmation(
+    tmp_path: Path,
+) -> None:
+    page = TestClient(create_app(tmp_path / "history.sqlite3")).get("/").text
+
+    assert "Promote to regression" in page
+    assert "Historical evidence" in page
+    assert "Approved expectation" in page
+    assert "Create a developer-authored regression from the current server-replayed inputs." in page
+    assert "developer_approved" in page
+    assert "No expectations are selected by default." in page
+    assert "selectionNote.hidden = rows.children.length > 0" in page
+    assert "approved.checked = true" not in page
+    assert "if (promotionEligible) result.append(renderPromotion())" in page
+    assert "if (regressionPassed) result.append(renderPromotion())" not in page
+    assert "Regression specification (optional)" in page
+    assert "path.placeholder = 'JSON path, for example output.answer'" in page
+    assert "expected.placeholder = 'Expected JSON value'" in page
+    assert "row.remove()" in page
+    assert "JSON.parse(fields[2].value)" in page
+
+
+def test_workbench_promotion_returns_one_coherent_bundle_from_existing_exporter(
+    tmp_path: Path,
+) -> None:
+    client = TestClient(create_app(tmp_path / "history.sqlite3"))
+    payload = _payload()
+    payload["promotion"] = {
+        "developer_approved": True,
+        "assertions": [{"path": "output.umbrella_needed", "operator": "equals", "expected": True}],
+    }
+
+    response = client.post("/api/replay", json=payload)
+
+    assert response.status_code == 200
+    promotion = response.json()["regression_promotion"]
+    assert promotion["spec"] == {
+        "version": "0.1.0",
+        "assertions": [{"path": "output.umbrella_needed", "operator": "equals", "expected": True}],
+    }
+    entries = _bundle_entries(response)
+    assert list(entries) == [
+        "replay-capsule.json",
+        "regression-spec.json",
+        "test_traceforge_regression.py",
+    ]
+    assert json.loads(entries["replay-capsule.json"]) == payload["capsule"]
+    bundled_capsule = json.loads(entries["replay-capsule.json"])
+    assert canonicalize(bundled_capsule) == canonicalize(payload["capsule"])
+    assert capsule_integrity_digest(bundled_capsule) == payload["capsule"]["integrity"]["digest"]
+    assert json.loads(entries["regression-spec.json"]) == promotion["spec"]
+    assert b"replay_exact" in entries["test_traceforge_regression.py"]
+
+
+def test_workbench_can_create_first_spec_and_replace_failed_old_expectations(
+    tmp_path: Path,
+) -> None:
+    client = TestClient(create_app(tmp_path / "history.sqlite3"))
+    without_spec = _payload()
+    without_spec.pop("spec")
+    review = client.post("/api/replay", json=without_spec)
+
+    assert review.status_code == 200
+    assert review.json()["regression"] is None
+    assert review.json()["comparison"]["deterministic_match"] is False
+
+    without_spec["promotion"] = {
+        "developer_approved": True,
+        "assertions": [{"path": "output.umbrella_needed", "operator": "equals", "expected": True}],
+    }
+
+    first = client.post("/api/replay", json=without_spec)
+
+    assert first.status_code == 200
+    assert first.json()["regression"] is None
+    assert "regression_promotion" in first.json()
+
+    failed_old = _payload()
+    failed_old["spec"] = copy.deepcopy(failed_old["spec"])
+    failed_old["spec"]["assertions"][0]["expected"] = False
+    failed_old["promotion"] = without_spec["promotion"]
+    replacement = client.post("/api/replay", json=failed_old)
+
+    assert replacement.status_code == 200
+    assert replacement.json()["regression"]["passed"] is False
+    assert "regression_promotion" in replacement.json()
+
+
+def test_workbench_promotion_replays_current_submitted_context_and_ignores_forged_result(
+    tmp_path: Path,
+) -> None:
+    client = TestClient(create_app(tmp_path / "history.sqlite3"))
+    visible_weather = client.post("/api/replay", json=_payload())
+    assert visible_weather.status_code == 200
+    swapped = _payload("rag-citation-grounding")
+    swapped["promotion"] = {
+        "developer_approved": True,
+        "assertions": copy.deepcopy(swapped["spec"]["assertions"]),
+    }
+    swapped["replay_result"] = visible_weather.json()
+    swapped["technical_status"] = "completed"
+    swapped["deterministic_match"] = True
+
+    response = client.post("/api/replay", json=swapped)
+
+    assert response.status_code == 200
+    entries = _bundle_entries(response)
+    assert json.loads(entries["replay-capsule.json"]) == swapped["capsule"]
+    assert json.loads(entries["replay-capsule.json"]) != _payload()["capsule"]
+    assert response.json()["original_observation"] == swapped["capsule"]["original_observation"]
+
+
+def test_workbench_rejects_changed_assertions_and_incompatible_registered_runner(
+    tmp_path: Path,
+) -> None:
+    client = TestClient(create_app(tmp_path / "history.sqlite3"))
+    changed = _payload()
+    changed["promotion"] = {
+        "developer_approved": True,
+        "assertions": [{"path": "output.umbrella_needed", "operator": "equals", "expected": False}],
+    }
+    assertion_response = client.post("/api/replay", json=changed)
+    assert assertion_response.status_code == 400
+    assert assertion_response.json()["error"]["code"] == "invalid-promotion"
+
+    duplicate = _payload()
+    assertion = {
+        "path": "output.umbrella_needed",
+        "operator": "equals",
+        "expected": True,
+    }
+    duplicate["promotion"] = {
+        "developer_approved": True,
+        "assertions": [assertion, copy.deepcopy(assertion)],
+    }
+    duplicate_response = client.post("/api/replay", json=duplicate)
+    assert duplicate_response.status_code == 400
+    assert duplicate_response.json()["error"]["code"] == "invalid-promotion"
+
+    changed["runner"] = "rag-citation-grounding"
+    runner_response = client.post("/api/replay", json=changed)
+    assert runner_response.status_code == 400
+    assert runner_response.json()["error"]["code"] in {
+        "dependency-mismatch",
+        "trusted-runner-failure",
+    }
+
+
+def test_workbench_bundle_filename_changes_with_artifact_set(tmp_path: Path) -> None:
+    client = TestClient(create_app(tmp_path / "history.sqlite3"))
+    first_payload = _payload()
+    first_payload["promotion"] = {
+        "developer_approved": True,
+        "assertions": [{"path": "output.umbrella_needed", "operator": "equals", "expected": True}],
+    }
+    second_payload = _payload()
+    second_payload["promotion"] = {
+        "developer_approved": True,
+        "assertions": [
+            {"path": "output.answer", "operator": "contains", "expected": "Take an umbrella"}
+        ],
+    }
+
+    first = client.post("/api/replay", json=first_payload)
+    second = client.post("/api/replay", json=second_payload)
+
+    assert first.status_code == second.status_code == 200
+    assert (
+        first.json()["regression_promotion"]["artifact"]["filename"]
+        != second.json()["regression_promotion"]["artifact"]["filename"]
+    )
+
+
+def test_workbench_promotion_rejects_browser_filesystem_controls(tmp_path: Path) -> None:
+    client = TestClient(create_app(tmp_path / "history.sqlite3"))
+    target = tmp_path / "browser-selected.py"
+    payload = _payload()
+    payload["promotion"] = {
+        "developer_approved": True,
+        "assertions": [{"path": "output.umbrella_needed", "operator": "equals", "expected": True}],
+        "output_path": str(target),
+    }
+
+    response = client.post("/api/replay", json=payload)
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "invalid-promotion"
+    assert not target.exists()
 
 
 def test_replay_report_leads_with_bounded_evidence_backed_analysis(tmp_path: Path) -> None:
@@ -1051,7 +1257,7 @@ def test_dashboard_uses_neutral_expected_repair_and_collapsed_raw_evidence(tmp_p
     styles = (ROOT / "src/traceforge/static/dashboard.css").read_text()
     assert "Changed — expected repair" in page
     assert "data.comparison?.deterministic_match ? 'good' : 'neutral'" in page
-    assert "satisfies the approved regression" in page
+    assert "satisfies the existing regression" in page
     assert "summary-card.neutral" in styles
     assert "summary-card.bad" in styles
     assert "details('Original observation'" in page
@@ -1081,9 +1287,15 @@ def test_custom_runner_registration_uses_serve_startup_boundary(
     assert client.get("/api/examples/my-agent").status_code == 404
     custom_payload = _payload()
     custom_payload.update(runner="my-agent", source_mode="upload")
+    custom_payload["promotion"] = {
+        "developer_approved": True,
+        "assertions": [{"path": "output.umbrella_needed", "operator": "equals", "expected": True}],
+    }
     response = client.post("/api/replay", json=custom_payload)
     assert response.status_code == 200
     assert response.json()["regression"]["passed"] is True
+    source = _bundle_entries(response)["test_traceforge_regression.py"].decode()
+    assert "load_runner('trusted_runner:run')" in source
 
 
 def test_serve_wires_trusted_assembly_database_at_startup(

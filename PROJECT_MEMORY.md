@@ -20,6 +20,12 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
 - Immutable evidence-backed divergence analysis copies per-domain summaries and first paths from
   `ExecutionDiff`, reports bounded successful exact-replay dependency reproduction, and explicitly
   rejects global chronology, root-cause, and cross-domain causal claims.
+- Explicit regression promotion creates the existing developer-authored `RegressionSpec 0.1.0`
+  from a caller-supplied completed `ReplayResult`, selected strict-JSON expectations, and explicit
+  approval. The public value is not provenance-attested; Workbench independently reruns the
+  currently submitted sealed capsule with its startup-registered runner, then returns one coherent
+  in-memory regression bundle. Repaired behavior may differ from history, and neither path mutates
+  evidence or derived replay values.
 - Controlled weather, RAG citation-grounding, and tool-argument-safety examples.
 - Local FastAPI dashboard with allow-listed runners and SQLite replay history.
 - Local Workbench original-run catalog and execution-forensics detail backed by read-only assembly
@@ -69,6 +75,8 @@ Architecture detail belongs in [docs/architecture.md](docs/architecture.md), and
 - Sealed capsule content is never repaired, enriched, reordered, or rewritten. Derivations create separate artifacts.
 - Capsule integrity covers the canonical document with only `integrity.digest` omitted; request fingerprints cover canonical sanitized requests.
 - Regression specifications and generated tests remain separate from original evidence and require developer approval.
+- Promotion is a developer decision: no replay, diff, analysis, or passing regression result can
+  silently infer or approve an expectation.
 - Telemetry correlation, replay history, and assembly state are operational data in SQLite or telemetry systems, never capsule fields.
 
 The normative format and integrity rules are in [the `0.1.0` contract](docs/contracts/replay-capsule-v0.md), [the `0.2.0` contract](docs/contracts/replay-capsule-v0.2.md), [ADR-0002](docs/decisions/ADR-0002-replay-capsule-v0-format.md), and [ADR-0007](docs/decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md).
@@ -127,18 +135,23 @@ The canonical security model is [docs/security.md](docs/security.md); vulnerabil
 - [ADR-0011](docs/decisions/ADR-0011-evidence-backed-divergence-analysis.md): versioned
   evidence-backed divergence analysis, section-scoped first paths, exact-replay context, and
   explicit non-causal limits.
+- [ADR-0012](docs/decisions/ADR-0012-regression-promotion-workflow.md): explicit promotion of a
+  caller-approved supplied replay result into the existing developer-owned regression
+  specification, plus a server-replayed atomic Workbench bundle, without changing historical
+  evidence.
 
 ADRs are historical records. Supersede them with a new ADR; do not silently rewrite accepted decisions.
 
 ## Current Branch, Milestone, and Limitations
 
-- Documented branch: `feat/v0.5-divergence-analysis`; retained branch `release/v0.4.1` and
+- Documented branch: `feat/v0.5-regression-promotion`; retained branch `release/v0.4.1` and
   tag `v0.4.1` identify the verified release commit.
 - Current milestone: `v0.5.0 — Real Agent Capture` is active; the generic Replay Capsule `0.2.0`
   tool boundary, one separate real Agentic-chatbot integration, and the portable structured
   execution diff with exact-replay integration are implemented. Issue #4 derives a compact
   framework-neutral divergence analysis from the diff without changing comparison semantics.
-  Workbench V1 Phase 1 adds a read-only original-run catalog, explicit source states, reproducible
+  Issue #5 adds explicit regression promotion and offline CI export through the existing
+  `RegressionSpec` contract. Workbench V1 Phase 1 adds a read-only original-run catalog, explicit source states, reproducible
   controlled review data, a real Run Detail view, and bounded replay-result analysis while `0.1.0`
   remains unchanged.
 - Known limitations: only one application-owned real-agent integration exists; tool results that require
@@ -162,7 +175,8 @@ Live branch, milestone, blockers, and assumptions belong in [docs/project-state.
 
 ## Exact Next Approved Milestone
 
-Next milestone: not yet selected.
+Current approved milestone: v0.5 Issue #5 regression promotion and CI workflow. No subsequent
+milestone is approved.
 
 ## Required Reading Order
 

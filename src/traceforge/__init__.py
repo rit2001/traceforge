@@ -20,6 +20,7 @@ from traceforge.exceptions import (
 )
 from traceforge.export import ExportError, export_pytest
 from traceforge.interfaces import DependencyAdapter
+from traceforge.promotion import promote_regression
 from traceforge.replay import ReplayResult, load_runner, replay_exact
 from traceforge.sealing import seal_capsule
 from traceforge.validation import validate_capsule
@@ -44,6 +45,7 @@ __all__ = [
     "UnsafeToolArgumentsError",
     "UnsupportedToolFailureError",
     "export_pytest",
+    "promote_regression",
     "analyze_divergence",
     "load_runner",
     "invoke_recorded_tool",

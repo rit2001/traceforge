@@ -132,6 +132,20 @@ The first diff can be textual and structured rather than a full dashboard.
 
 Test export converts developer-approved expectations into offline tests. Generated or suggested assertions are drafts until the developer approves them.
 
+Regression promotion is the explicit developer action that creates the existing
+`RegressionSpec 0.1.0` from selected expectations validated against a caller-supplied technically
+completed result. The public result type is constructible and carries no provenance attestation;
+Workbench independently performs exact replay with the current submitted evidence and registered
+runner before promotion.
+It is not a capsule transition: evidence remains immutable, while the specification remains
+mutable developer-owned source. A deterministic mismatch does not block promotion of repaired
+behavior. `ExecutionDiff`, `DivergenceAnalysis`, and `RegressionResult` remain derived runtime
+values and are neither copied into the specification nor treated as approval. Both filesystem and
+Workbench exports use the same deterministic pytest renderer; the browser receives one
+content-addressed in-memory ZIP containing fixed path-safe entries and cannot choose a server path,
+filename, entry name, or runner import. See
+[ADR-0012](decisions/ADR-0012-regression-promotion-workflow.md).
+
 Tests should depend on the Replay Capsule and local TraceForge code, not live model APIs, live tool APIs, application secrets, or external services.
 
 Default unit and CI test suites must remain fully offline. Live fork experiments are evaluation runs, not default regression checks.
