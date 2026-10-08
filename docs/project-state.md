@@ -1,6 +1,6 @@
 # Project State
 
-Last verified date: 2026-10-04.
+Last verified date: 2026-10-08.
 
 ## Current Phase
 
@@ -18,6 +18,12 @@ execution-forensics Run Detail page over existing assembly state and sealed caps
 collects a detached successful-consumption dependency transcript and attaches additive
 `ExecutionDiff` and `DivergenceAnalysis` values to each technically successful `ReplayResult`.
 Replay Capsule schemas remain unchanged, and the core remains framework-neutral.
+
+Issue #5 adds an explicit replay-result-to-regression workflow. The public API returns the existing
+`RegressionSpec 0.1.0` from a caller-supplied constructible result, selected strict-JSON
+expectations, and explicit approval; it does not attest replay provenance. Workbench reruns current
+submitted evidence with a startup-registered runner and returns one coherent in-memory ZIP. Neither
+path requires deterministic equality or mutates capsules, diffs, analyses, or regression results.
 
 The release aligned package, CLI, Docker, CI, public documentation, license, contributor framework, artifacts, installation, localhost workbench, Kafka topic configuration, and bounded publication-safety surfaces. It did not redesign replay semantics, implement fork replay, or add production-readiness claims.
 
@@ -56,6 +62,11 @@ The release aligned package, CLI, Docker, CI, public documentation, license, con
   distinguishes unavailable sources from valid empty catalogs, and renders a real Run
   Detail/Execution Forensics view without accepting browser paths or imports. A controlled offline
   review-data generator recreates one `0.2.0` model → tool → model catalog outside the repository.
+- v0.5 Issue #5 regression promotion and CI workflow: ADR-0012 defines promotion as an explicit
+  developer decision that creates the existing regression specification from selected assertions.
+  The domain API validates the selection against a supplied technically completed result;
+  Workbench performs exact replay again and returns a content-addressed atomic bundle without
+  accepting server paths; the existing deterministic pytest export remains the offline CI artifact.
 
 ## Repository Status
 
@@ -107,6 +118,10 @@ capsule directory without exposing path selection to the browser.
 - ADR-0011 makes `DivergenceAnalysis` a versioned derivation from `ExecutionDiff`, preserves one
   first path per evidence domain, and prohibits global chronology, root-cause, and cross-domain
   causal claims from today's evidence.
+- ADR-0012 keeps historical evidence distinct from mutable approved expectations. Promotion uses
+  existing assertion and export semantics, requires explicit approval, and never treats
+  deterministic equality, technical completion, or an old regression verdict as automatic
+  acceptance. Public `ReplayResult` values remain caller-trusted rather than provenance-attested.
 
 ## Current Assumptions
 
@@ -125,11 +140,17 @@ capsule directory without exposing path selection to the browser.
 - Workbench run detail has no persisted replay observation, structured diff, or assertion detail;
   divergence analysis and those records remain live derived replay results. Original runs also
   have no durable runner association.
+- Workbench promotion is a generation/download flow, not a persisted regression catalog. Browser
+  export is one content-addressed ZIP rather than independently collision-prone files; trusted
+  filesystem export remains fail-if-present unless replacement is explicitly requested.
 - Current evidence domains do not share a proven chronology and carry no causal-span or verifier
   relationship, so divergence analysis cannot identify a root cause or rank one domain as globally
   earliest.
 - Pre-existing follow-up technical debt outside Issue #3: `ReplayResult` observation export alias
   hardening and `RegressionResult`/`AssertionResult` expected/actual snapshot alias hardening.
+- Pre-existing `RegressionSpec 0.1.0` behavior: `equals` delegates to Python `==`, including Python's
+  boolean/integer equivalence. Issue #5 reuses that evaluator unchanged rather than silently
+  redesigning assertion semantics.
 - Sanitization remains best effort and still requires human review before fixtures are shared.
 - Concurrent host-side inspection of the worker's bind-mounted SQLite WAL is unsupported on Docker Desktop; use a service-owned reader or inspect after shutdown.
 - The kind worker remains one replica and SQLite remains single writer; the local RWO PVC and ephemeral Kafka do not provide high availability or disaster recovery.
@@ -140,7 +161,8 @@ Cloud Terraform, remote production state, cloud/production Kubernetes, Helm, ope
 
 ## Exact Next Approved Task
 
-Next milestone: not yet selected. Do not begin another feature without explicit approval.
+Finish and adversarially review v0.5 Issue #5 regression promotion and CI workflow. Do not begin a
+subsequent feature without explicit approval.
 
 ## Milestone-Boundary Checklist
 

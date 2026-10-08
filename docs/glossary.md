@@ -40,6 +40,19 @@ An opt-in evaluation involving fresh model generation where results may vary and
 
 An offline test created from developer-approved expected behaviour to detect whether a future code, prompt, or graph change breaks that behaviour.
 
+## Regression Promotion
+
+The explicit developer action that creates or updates a separate regression specification from
+selected expectations validated against a supplied, technically completed replay result. The
+public result is not provenance-attested; Workbench obtains its bounded result by replaying the
+current evidence again on the server. Promotion does not change the Replay Capsule or turn replay
+output into historical evidence.
+
+## Approved Expectation
+
+A mutable developer-authored assertion describing desired future behavior. It is a review decision,
+not a captured fact, and remains separate from immutable historical evidence.
+
 ## Redaction
 
 Removing or replacing sensitive values before data is stored in a capsule or fixture, including API keys, authorization headers, secrets, and unneeded user data.

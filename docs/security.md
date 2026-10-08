@@ -12,6 +12,10 @@ This is an initial security model for the local feasibility spike. It is not a p
 - Go gateway and Kafka: accept and transport sanitized mutable events; they do not create immutable evidence.
 - Python worker and SQLite assembly state: order/deduplicate events and seal capsules; operational correlation remains outside evidence.
 - FastAPI dashboard: unauthenticated local interface with allow-listed runners and size-bounded uploads.
+- Regression promotion: an explicit local developer decision over selected expectations, not an
+  evidence or identity claim. Workbench promotion accepts no server output path, filename, runner
+  import, archive entry, or overwrite control; it replays current submitted evidence with the
+  registered runner and returns one content-addressed in-memory ZIP only.
 - OpenTelemetry Collector: optional unencrypted/unauthenticated local diagnostic endpoint; it is not an evidence store or approved external export path.
 - Local kind cluster: schedules the existing containers with non-root identities, dropped capabilities, RuntimeDefault seccomp, resource bounds, and local PVC storage; it is not a production security boundary or multi-tenant environment.
 - Local Terraform environment: reads an explicit kubeconfig path/context and stores non-secret foundation metadata in ignored local state; state is sensitive operational material even when the current resources contain no intended secrets.

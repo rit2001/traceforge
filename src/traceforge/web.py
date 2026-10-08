@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 import re
 import sysconfig
@@ -28,8 +30,10 @@ from traceforge.exceptions import (
     TraceForgeError,
     UnexpectedDependencyError,
 )
+from traceforge.export import render_regression_bundle
 from traceforge.history import SQLiteReplayHistory
 from traceforge.metrics import asgi_app
+from traceforge.promotion import promote_regression
 from traceforge.replay import CallableFrameworkAdapter, load_runner, replay_exact
 from traceforge.workbench import SQLiteRunCatalog
 
@@ -62,6 +66,7 @@ class RunnerMetadata:
     description: str
     classification: str
     adapter: CallableFrameworkAdapter
+    runner_reference: str
     has_example: bool = False
 
     def public(self) -> dict[str, Any]:
@@ -82,6 +87,7 @@ def _builtins() -> dict[str, RunnerMetadata]:
             "Repair incorrect advice using recorded weather dependencies.",
             "Built-in demo",
             CallableFrameworkAdapter(weather_runner),
+            "traceforge.examples.weather_agent:run",
             has_example=True,
         ),
         "rag-citation-grounding": RunnerMetadata(
@@ -90,6 +96,7 @@ def _builtins() -> dict[str, RunnerMetadata]:
             "Verify that answers remain supported by recorded evidence.",
             "Built-in demo",
             CallableFrameworkAdapter(rag_runner),
+            "traceforge.examples.rag_agent:run",
             has_example=True,
         ),
         "tool-argument-safety": RunnerMetadata(
@@ -98,6 +105,7 @@ def _builtins() -> dict[str, RunnerMetadata]:
             "Detect consequential changes to approved tool arguments.",
             "Built-in demo",
             CallableFrameworkAdapter(tool_safety_runner),
+            "traceforge.examples.tool_safety_agent:run",
             has_example=True,
         ),
     }
@@ -139,6 +147,7 @@ def build_runner_registry(registrations: Iterable[str] = ()) -> dict[str, Runner
             "Trusted local runner registered when this dashboard process started.",
             "Custom runner",
             adapter,
+            reference,
         )
     return registry
 
@@ -377,18 +386,30 @@ def create_app(
                     "Choose a runner registered when this local server started.",
                     400,
                 )
-            if "capsule" not in payload or "spec" not in payload:
+            if "capsule" not in payload:
                 return _error(
                     "missing-evidence",
                     "Evidence is incomplete",
-                    "Exact replay requires both a Replay Capsule and a regression specification.",
-                    "Add both documents before running exact replay.",
+                    "Exact replay requires a Replay Capsule.",
+                    "Add a sealed Replay Capsule before running exact replay.",
                     400,
                 )
             capsule = payload["capsule"]
-            spec = payload["spec"]
+            spec = payload.get("spec")
+            promotion_request = payload.get("promotion")
+            if promotion_request is not None and (
+                not isinstance(promotion_request, dict)
+                or set(promotion_request) != {"developer_approved", "assertions"}
+            ):
+                return _error(
+                    "invalid-promotion",
+                    "Invalid promotion request",
+                    "Promotion accepts only explicit approval and selected assertions.",
+                    "Remove filesystem controls and review each selected expectation.",
+                    400,
+                )
             result = replay_exact(capsule, registry[runner_name].adapter, spec)
-            behavioural = result.regression is not None and result.regression.passed
+            behavioural = None if result.regression is None else result.regression.passed
             digest = (
                 capsule.get("integrity", {}).get("digest", "unknown")
                 if isinstance(capsule, dict)
@@ -398,12 +419,43 @@ def create_app(
                 capsule_digest=digest,
                 runner=runner_name,
                 technical_result=result.technical_status,
-                behavioural_result="passed" if behavioural else "failed",
+                behavioural_result=(
+                    None if behavioural is None else "passed" if behavioural else "failed"
+                ),
                 error_summary=None,
             )
             response = result.to_dict()
             response["invocation"] = capsule["invocation"]
             response["dependencies"] = capsule["dependencies"]
+            if promotion_request is not None:
+                try:
+                    promoted = promote_regression(
+                        result,
+                        promotion_request["assertions"],
+                        developer_approved=promotion_request["developer_approved"],
+                    )
+                except SemanticValidationError as exc:
+                    return _error(
+                        "invalid-promotion",
+                        "Promotion was not created",
+                        str(exc),
+                        "Review the replay and explicitly approve selected expectations.",
+                        400,
+                    )
+                bundle = render_regression_bundle(
+                    capsule,
+                    promoted,
+                    registry[runner_name].runner_reference,
+                )
+                bundle_digest = hashlib.sha256(bundle).hexdigest()[:16]
+                response["regression_promotion"] = {
+                    "spec": promoted,
+                    "artifact": {
+                        "filename": f"traceforge-regression-{bundle_digest}.zip",
+                        "media_type": "application/zip",
+                        "content_base64": base64.b64encode(bundle).decode("ascii"),
+                    },
+                }
             return JSONResponse(response)
         except Exception as exc:
             capsule = payload.get("capsule", {}) if isinstance(payload, dict) else {}

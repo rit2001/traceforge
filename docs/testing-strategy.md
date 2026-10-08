@@ -29,6 +29,14 @@ success, exact replay failure modes, capture/redaction, regression/export, dashb
 schemas, Kafka publisher/assembly/DLQ semantics, OpenTelemetry correlation, metric-label bounds,
 and the Go gateway's validation, HTTP, publisher, telemetry, and outage/recovery boundaries.
 
+Regression-promotion coverage requires explicit approval and selected assertions, accepts a
+repaired replay whose observation differs from history, rejects technical failure, proves no
+capsule/diff/analysis mutation, reuses the existing regression operators, refuses implicit broad
+snapshots, rejects non-JSON values and exact duplicates, covers no prior spec and failed old specs,
+checks atomic bundle collision safety, and runs the controlled generated pytest through pass →
+intentional regression failure → restored pass → dependency mismatch with recorded dependencies
+only.
+
 ## Exact Offline Replay Tests
 
 Purpose:

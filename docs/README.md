@@ -8,6 +8,7 @@ Read [PROJECT_MEMORY.md](../PROJECT_MEMORY.md) first. This directory is the auth
 - [Product](product.md): product problem, target developer, user workflow, guarantees, non-guarantees, and adoption criteria.
 - [Architecture](architecture.md): replay and service boundaries, local Kubernetes deployment, future target architecture, and postponed infrastructure rationale.
 - [Codebase map](codebase-map.md): current component responsibilities, inputs, outputs, invariants, extension points, and tests.
+- [Regression promotion and CI](regression-promotion.md): explicit replay-to-spec promotion, trust boundary, shared pytest export, Workbench flow, and provider-neutral CI contract.
 - [Weather replay spike](spikes/weather-replay.md): five-session feasibility spike plan, Weather Grounding Capsule scenario, offline requirements, and go/no-go criteria.
 - [Roadmap](roadmap.md): evidence-based stage gates from documentation through possible infrastructure evaluation.
 - [Project state](project-state.md): current phase, current milestone, repository status, assumptions, blockers, exact next approved task, and milestone-boundary checklist.
@@ -27,6 +28,7 @@ Read [PROJECT_MEMORY.md](../PROJECT_MEMORY.md) first. This directory is the auth
 - [ADR-0009](decisions/ADR-0009-portable-structured-execution-diff.md): accepted portable structured execution comparison, conservative sequence alignment, and successful exact-replay dependency transcript contract.
 - [ADR-0010](decisions/ADR-0010-workbench-run-read-model.md): accepted original-run Workbench read model, operational/evidence boundary, and read-only local API contract.
 - [ADR-0011](decisions/ADR-0011-evidence-backed-divergence-analysis.md): accepted evidence-backed divergence analysis, section-scoped first paths, bounded exact-replay context, and explicit non-causal limits.
+- [ADR-0012](decisions/ADR-0012-regression-promotion-workflow.md): accepted explicit regression promotion using the existing specification and pytest exporter without mutating evidence.
 - [Go ingestion gateway](services/go-ingestion-gateway.md): local HTTP ingestion, validation, backpressure, and Kafka publishing semantics.
 - [Observability](observability.md): optional local cross-service traces, replay links, metrics, verification commands, and security limitations.
 - [Verification ledger](verification-ledger.md): commands and methods actually executed, results, environments, revisions, and limitations.

@@ -8,9 +8,9 @@ TraceForge focuses on one narrow problem: preserve a failed agent execution well
 
 ## Implementation Status
 
-- **Implemented:** controlled capture, sanitization, sealing, structural/semantic/integrity validation, exact offline replay, deterministic observation comparison, separate developer-approved regression specifications, and pytest export.
+- **Implemented:** controlled capture, sanitization, sealing, structural/semantic/integrity validation, exact offline replay, portable structured diff and bounded divergence analysis, separate developer-approved regression specifications, explicit promotion from a supplied completed result, server-replayed Workbench bundles, and pytest export.
 - **Partial:** capture and framework integration remain bounded, while Replay Capsule `0.2.0` provides a framework-independent generic tool dependency primitive.
-- **Planned:** real-agent integration, richer execution diffing, fork replay, and opt-in fresh-model replay.
+- **Planned:** broader real-agent integration, fork replay, and opt-in fresh-model replay.
 
 The generic tool primitive accepts exact-replay evidence only when the standard scanner leaves a
 tool result unchanged as JSON. If not, the application still receives the original successful
@@ -66,9 +66,16 @@ Capsules must never contain API keys, secrets, authorization headers, or unredac
 2. TraceForge captures the run into a Replay Capsule.
 3. The developer runs exact replay to confirm the captured failure path can be reproduced offline.
 4. TraceForge compares the original and replayed observations.
-5. The developer writes and reviews separate regression expectations.
-6. Approved expectations are exported as an offline regression test.
-7. Future changes are checked against that regression test without calling live APIs.
+5. The developer understands the bounded diff and analysis without treating them as root cause.
+6. The developer explicitly promotes only selected, reviewed expectations into the separate
+   regression specification.
+7. Workbench replays the current evidence again and returns one coherent artifact bundle, or trusted
+   local code exports the approved specification through the existing pytest pipeline.
+8. Future changes are checked in local or CI pytest without calling live application dependencies.
+
+In shorthand: **Capture → Replay → Understand → Promote → CI**. Promotion never mutates historical
+evidence and a replay that differs from the historical failure remains eligible when its selected
+repaired behavior is correct.
 
 ## Planned Fork Workflow
 
@@ -109,6 +116,8 @@ The initial controlled spike established these implemented mechanics:
 - Exact replay reproduces the captured execution path offline.
 - Deterministic comparison identifies supported observation and output differences.
 - A developer-approved expectation can be exported as an offline regression test.
+- A technically completed repaired replay can be explicitly promoted into the existing regression
+  specification without requiring deterministic equality or changing the capsule.
 
 Fork replay with frozen tool outputs and richer execution diffing remain planned success criteria rather than completed evidence.
 
