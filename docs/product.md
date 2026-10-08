@@ -8,8 +8,8 @@ TraceForge focuses on one narrow problem: preserve a failed agent execution well
 
 ## Implementation Status
 
-- **Implemented:** controlled capture, sanitization, sealing, structural/semantic/integrity validation, exact offline replay, portable structured diff and bounded divergence analysis, separate developer-approved regression specifications, explicit promotion from a supplied completed result, server-replayed Workbench bundles, and pytest export.
-- **Partial:** capture and framework integration remain bounded, while Replay Capsule `0.2.0` provides a framework-independent generic tool dependency primitive.
+- **Implemented:** controlled capture, sanitization, sealing, structural/semantic/integrity validation, portable execution-span evidence and attribution, exact offline replay, portable structured diff and bounded divergence analysis, separate developer-approved regression specifications, explicit promotion from a supplied completed result, server-replayed Workbench bundles, and pytest export.
+- **Partial:** capture and framework integration remain bounded, while Replay Capsule `0.2.0` provides a framework-independent generic tool dependency primitive and `0.3.0` provides a framework-independent structural execution tree.
 - **Planned:** broader real-agent integration, fork replay, and opt-in fresh-model replay.
 
 The generic tool primitive accepts exact-replay evidence only when the standard scanner leaves a
@@ -51,12 +51,18 @@ A Replay Capsule is a local artifact that freezes the information needed to repl
 - Tool call names, arguments, and call order.
 - Captured tool outputs.
 - Ordered, framework-neutral execution events.
+- One explicit portable execution-span tree plus dependency/event attribution for 0.3 evidence.
 - Timestamps or ordering metadata where needed for comparison.
 - Redaction metadata for sensitive fields.
 
 Developer-approved expectations are deliberately stored in a separate regression specification. They are not capsule evidence and do not change capsule integrity.
 
 The capsule is not a general data lake, hosted trace store, or production telemetry backend.
+
+Portable execution spans describe where a dependency/event was recorded and which boundary
+structurally enclosed another boundary. They are application-instrumented historical evidence,
+not operational OpenTelemetry and not proof of why behavior occurred. TraceForge does not infer a
+root cause, causal ranking, verifier edge, or global first divergence from this structure.
 
 Capsules must never contain API keys, secrets, authorization headers, or unredacted sensitive data.
 
@@ -107,6 +113,8 @@ TraceForge does not guarantee:
 - Compatibility with every agent framework.
 - Hosted storage, authentication, billing, or collaboration features.
 - Accurate behaviour if the original capture omitted required data.
+- Root cause or causal responsibility from portable execution relationships.
+- Replay-side execution-span comparison in the current diff/analysis contracts.
 
 ## Initial Success Criteria
 
@@ -118,6 +126,8 @@ The initial controlled spike established these implemented mechanics:
 - A developer-approved expectation can be exported as an offline regression test.
 - A technically completed repaired replay can be explicitly promoted into the existing regression
   specification without requiring deterministic equality or changing the capsule.
+- A controlled 0.3 capsule can identify the span containing a dependency/event and its structural
+  parent without claiming causality.
 
 Fork replay with frozen tool outputs and richer execution diffing remain planned success criteria rather than completed evidence.
 

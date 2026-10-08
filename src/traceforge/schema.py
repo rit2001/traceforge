@@ -17,6 +17,7 @@ from traceforge.exceptions import StructuralValidationError
 SCHEMA_FILENAMES = {
     "0.1.0": "replay-capsule-v0.schema.json",
     "0.2.0": "replay-capsule-v0.2.schema.json",
+    "0.3.0": "replay-capsule-v0.3.schema.json",
 }
 
 

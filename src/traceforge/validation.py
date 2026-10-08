@@ -9,7 +9,7 @@ from traceforge.canonical import capsule_integrity_digest, request_fingerprint
 from traceforge.exceptions import IntegrityError, SemanticValidationError
 from traceforge.schema import validate_structure
 
-SUPPORTED_SCHEMA_VERSIONS = frozenset({"0.1.0", "0.2.0"})
+SUPPORTED_SCHEMA_VERSIONS = frozenset({"0.1.0", "0.2.0", "0.3.0"})
 
 
 def _validate_supported_version(capsule: Mapping[str, Any]) -> None:
@@ -46,7 +46,59 @@ def validate_semantics(capsule: Mapping[str, Any]) -> None:
     events = capsule["original_observation"]["events"]
     _validate_ordered_sequences(events, "original_observation.events")
 
+    if capsule["schema_version"] == "0.3.0":
+        _validate_execution_spans(capsule)
+
     validate_observation_semantics(capsule["original_observation"])
+
+
+def _validate_execution_spans(capsule: Mapping[str, Any]) -> None:
+    spans = capsule["execution_spans"]
+    _validate_ordered_sequences(spans, "execution_spans")
+    execution_span_ids = [span["execution_span_id"] for span in spans]
+    if len(execution_span_ids) != len(set(execution_span_ids)):
+        raise SemanticValidationError("execution_spans execution_span_id values must be unique")
+
+    known: set[str] = set()
+    for index, execution_span in enumerate(spans):
+        for label in ("kind", "name", "component"):
+            value = execution_span[label]
+            if not value.strip() or any(
+                ord(character) < 32 or ord(character) == 127 for character in value
+            ):
+                raise SemanticValidationError(
+                    f"execution_spans.{index}.{label} must be non-blank and control-free"
+                )
+        execution_span_id = execution_span["execution_span_id"]
+        parent_execution_span_id = execution_span["parent_execution_span_id"]
+        if index == 0:
+            if parent_execution_span_id is not None:
+                raise SemanticValidationError(
+                    "execution_spans must start with exactly one root whose "
+                    "parent_execution_span_id is null"
+                )
+        elif parent_execution_span_id is None:
+            raise SemanticValidationError(
+                "execution_spans must contain exactly one root; later "
+                "parent_execution_span_id values cannot be null"
+            )
+        elif parent_execution_span_id == execution_span_id:
+            raise SemanticValidationError("execution_spans cannot contain a self-parent")
+        elif parent_execution_span_id not in known:
+            raise SemanticValidationError(
+                f"execution_spans.{index}.parent_execution_span_id must reference an earlier span"
+            )
+        known.add(execution_span_id)
+
+    for domain, records in (
+        ("dependencies", capsule["dependencies"]),
+        ("original_observation.events", capsule["original_observation"]["events"]),
+    ):
+        for index, record in enumerate(records):
+            if record["execution_span_id"] not in known:
+                raise SemanticValidationError(
+                    f"{domain}.{index}.execution_span_id must reference an execution span"
+                )
 
 
 def validate_observation_semantics(observation: Mapping[str, Any]) -> None:

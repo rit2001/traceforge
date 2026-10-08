@@ -6,7 +6,7 @@ The original spike architecture was local, narrow, and file-based. The v0.2 work
 
 Current component status:
 
-- **Implemented:** explicit controlled capture with best-effort redaction; Replay Capsule `0.1.0` and `0.2.0` sealing and validation; exact replay with recorded model, HTTP, and generic tool outcomes; deterministic observation comparison; separate regression evaluation; pytest export; CLI; local workbench and SQLite replay history.
+- **Implemented:** explicit controlled capture with best-effort redaction; Replay Capsule `0.1.0`, `0.2.0`, and `0.3.0` sealing and validation; portable execution-span structure and attribution; exact replay with recorded model, HTTP, and generic tool outcomes; deterministic observation comparison; separate regression evaluation; pytest export; CLI; local workbench and SQLite replay history.
 - **Implemented in the optional local distributed path:** Go ingestion, bounded enqueueing, Kafka transport, Python validation/assembly, SQLite event-ID deduplication and ordering, DLQ commit safety, sealed capsule output, W3C propagation, optional spans, and Prometheus metrics.
 - **Partial:** framework integration coverage. The repository has one bounded LangGraph adapter and
   framework-independent capture/dependency primitives; a separate Agentic-chatbot worktree proves
@@ -44,6 +44,8 @@ The implemented capsule/capture path can represent:
 - Ordered execution events and terminal state.
 - Errors and exceptions when relevant.
 - Redaction decisions or markers.
+- One application-instrumented portable execution tree and explicit dependency/event attribution in
+  Replay Capsule 0.3.
 
 ## Replay Capsule
 
@@ -54,6 +56,22 @@ The capsule may record a framework name as descriptive subject provenance, but i
 Capsules must not require `.env` files, live API credentials, or access to the original application repository secrets.
 
 Capsules must never contain API keys, secrets, authorization headers, or unredacted sensitive data. A sanitised capsule fixture may be stored in TraceForge for offline tests.
+
+### Portable execution structure
+
+Replay Capsule `0.3.0` records exactly one rooted tree of generic logical execution boundaries.
+The application supplies stable `execution_span_id` values and descriptive `kind`, `name`, and
+`component` strings; `CaptureSession` derives each structural parent from explicit synchronous
+nesting. The sealed tree itself does not require a Python call stack and can represent siblings
+that later producers record concurrently. Every
+0.3 dependency and portable event names the span in which it was recorded.
+
+This is historical subject evidence. A parent means recorded containment, not cause,
+responsibility, verification, or a global chronology across evidence domains. Operational
+OpenTelemetry spans use a separate optional identity and storage domain. Framework adapters may
+translate native concepts into the portable fields, but core validation never interprets native
+nodes, runnables, agents, conversations, graphs, or messages. See
+[ADR-0013](decisions/ADR-0013-portable-execution-spans.md).
 
 ## Agentic-chatbot Integration Boundary
 
@@ -71,6 +89,11 @@ Exact replay freezes both model outputs and tool outputs. It checks whether the 
 
 This is the baseline reproducibility check. If exact replay cannot reproduce the captured path, fork replay and test export are not trustworthy.
 
+For a 0.3 capsule, replay validates historical execution structure before subject execution but
+does not require the current runner to reproduce span IDs or a tree. Historical event attribution
+is outside current observation equality, `ExecutionDiff 0.1.0`, and `DivergenceAnalysis 0.1.0`.
+Replay-side structure capture and comparison are deferred to a future versioned contract.
+
 ## Extension Boundaries
 
 The feasibility implementation keeps extension points at the replay boundary rather than inside captured evidence:
@@ -80,6 +103,10 @@ The feasibility implementation keeps extension points at the replay boundary rat
 - `CapsuleStore` owns local JSON loading and saving. Future storage implementations may change retrieval but must return the immutable captured document unchanged and must not rewrite evidence during reads.
 
 `RedactionScanner` remains the boundary for best-effort sanitization before persistence. `EventPublisher` now has direct and optional Kafka-backed consumers. Kafka carries mutable, retryable transport events; the SQLite assembler validates, orders, and deduplicates those events before the existing sealer creates evidence. Publishers and infrastructure must never modify, replace, or backfill a sealed capsule.
+
+Capture-event `0.3.0` adds `execution_span_recorded` while leaving 0.2 unchanged. The Go gateway
+dispatches both versions, Kafka preserves the per-capture sequence, and assembly rejects mixed
+versions and reconstructs span records before ordinary capsule validation and sealing.
 
 The replay CLI loads `MODULE:FUNCTION` runners as trusted local Python code. Importing and executing such a runner has the same authority as running that module directly; capsules must not select untrusted runner code.
 
@@ -187,7 +214,7 @@ TraceForge must treat captured traces as potentially sensitive. During the spike
 
 The v0.2 local stack adds a small Go HTTP gateway and Apache Kafka after the replay feasibility loop passed. Go isolates bounded request validation and non-blocking enqueueing. Kafka decouples the primary application from Python capsule assembly. Delivery is at least once; SQLite provides durable event-id deduplication and ordered per-capture assembly, not exactly-once processing.
 
-W3C Trace Context is propagated from HTTP into Kafka headers and extracted for one worker message at a time. Capture spans cross Go and Python services. Later replay starts a separate trace linked to operational correlation stored in SQLite, never in immutable capsule evidence. See [Local observability](observability.md).
+W3C Trace Context is propagated from HTTP into Kafka headers and extracted for one worker message at a time. Operational capture spans cross Go and Python services. Later replay starts a separate trace linked to operational correlation stored in SQLite, never in immutable capsule evidence. These IDs are not portable execution span IDs and are never reused as subject evidence. See [Local observability](observability.md).
 
 The default core installation and ordinary dashboard image do not require Kafka or OpenTelemetry. The Compose broker/controller combination and local Collector are development-only topologies.
 

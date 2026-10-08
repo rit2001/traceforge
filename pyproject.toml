@@ -57,8 +57,10 @@ version = {attr = "traceforge.__version__"}
 [tool.setuptools.data-files]
 "share/traceforge/schemas" = [
   "schemas/capture-event-v0.schema.json",
+  "schemas/capture-event-v0.3.schema.json",
   "schemas/replay-capsule-v0.schema.json",
   "schemas/replay-capsule-v0.2.schema.json",
+  "schemas/replay-capsule-v0.3.schema.json",
 ]
 "share/traceforge/examples/weather" = [
   "examples/weather/replay-capsule.json",

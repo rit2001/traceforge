@@ -30,7 +30,7 @@ TraceForge is designed around five boundaries:
 
 | Status | Capability |
 | --- | --- |
-| **Implemented** | Replay Capsule `0.1.0` compatibility and `0.2.0` tool-capable sealing, RFC 8785 canonicalization, SHA-256 integrity, structural/semantic validation, exact offline replay, recorded model/HTTP/tool playback, fail-closed matching, deterministic comparison, developer-authored regression specifications, pytest export, CLI, local FastAPI workbench, and SQLite replay history |
+| **Implemented** | Replay Capsule `0.1.0`/`0.2.0` compatibility and `0.3.0` portable execution-span evidence, RFC 8785 canonicalization, SHA-256 integrity, structural/semantic validation, exact offline replay, recorded model/HTTP/tool playback, fail-closed matching, deterministic comparison, developer-authored regression specifications, pytest export, CLI, local FastAPI workbench, and SQLite replay history |
 | **Implemented** | Three controlled cases: weather grounding, RAG citation grounding, and consequential HTTP/tool arguments |
 | **Implemented** | Optional local Go ingestion gateway → Kafka → Python assembly worker → SQLite idempotency/assembly → sealed Replay Capsule path |
 | **Implemented** | Bounded ingestion queue, event-ID deduplication, at-least-once processing, DLQ commit-safety boundary, W3C trace-context propagation, optional OpenTelemetry spans, and Prometheus metrics |
@@ -106,7 +106,7 @@ traceforge export-pytest capsule.json \
 
 ## Replay Capsule
 
-The [Replay Capsule `0.1.0` contract](docs/contracts/replay-capsule-v0.md) and successor [`0.2.0` contract](docs/contracts/replay-capsule-v0.2.md) define the immutable evidence boundary. A capsule contains sanitized inputs, execution observations, ordered recorded dependencies, provenance, and integrity metadata. Capsule schema versions are independent from the TraceForge software release version; sealed `0.1.0` evidence is not rewritten.
+The [Replay Capsule `0.1.0` contract](docs/contracts/replay-capsule-v0.md), [`0.2.0` contract](docs/contracts/replay-capsule-v0.2.md), and [`0.3.0` contract](docs/contracts/replay-capsule-v0.3.md) define the immutable evidence boundary. A capsule contains sanitized inputs, execution observations, ordered recorded dependencies, provenance, and integrity metadata; 0.3 adds one portable structural tree and explicit dependency/event attribution. Capsule schema versions are independent from the TraceForge software release version, and published evidence contracts are not rewritten.
 
 Canonical JSON and SHA-256 bind the capsule contents. Request fingerprints bind recorded dependency outcomes to sanitized request identity. Regression expectations and telemetry correlation remain separate from capsule integrity.
 
@@ -147,7 +147,7 @@ An optional local path moves capture event ingestion away from the application p
 
 ```mermaid
 flowchart LR
-  A[Instrumented local app] -->|Capture Event 0.2.0 + traceparent| B[Go ingestion gateway]
+  A[Instrumented local app] -->|Capture Event 0.2.0/0.3.0 + traceparent| B[Go ingestion gateway]
   B -->|bounded queue| C[Kafka: traceforge.capture.v1]
   C -->|at-least-once| D[Python assembly worker]
   D --> E[(SQLite event store)]
@@ -162,7 +162,7 @@ Use [Docker Compose](docs/operations/kafka.md) for the five-workload local stack
 
 ## OpenTelemetry and Metrics
 
-The distributed path propagates W3C trace context through HTTP and Kafka headers. Optional OpenTelemetry instrumentation creates ingestion, assembly, sealing, and replay spans; replay starts a separate trace linked to the original capture context rather than pretending capture and replay are one continuous operation.
+The distributed path propagates W3C trace context through HTTP and Kafka headers. Optional OpenTelemetry instrumentation creates ingestion, assembly, sealing, and replay spans; replay starts a separate trace linked to the original capture context rather than pretending capture and replay are one continuous operation. These operational spans are distinct from sealed portable execution spans and never supply their IDs.
 
 The Go gateway and Python worker expose bounded Prometheus metrics for local inspection. The repository does not include a production dashboard, alerting policy, SLO system, searchable trace store, or consumer-lag implementation.
 

@@ -23,11 +23,19 @@ Does not prove:
 - A prompt improves real-world behaviour.
 - The integration with Agentic-chatbot works end to end.
 
-Current coverage includes both capsule versions, generic tool capture/replay, sensitive-identity
+Current coverage includes all three capsule versions, generic tool capture/replay, sensitive-identity
 rejection, mutating-sanitizer isolation, result-evidence invalidation without changing live tool
 success, exact replay failure modes, capture/redaction, regression/export, dashboard, capture-event
 schemas, Kafka publisher/assembly/DLQ semantics, OpenTelemetry correlation, metric-label bounds,
 and the Go gateway's validation, HTTP, publisher, telemetry, and outage/recovery boundaries.
+
+Portable execution-span coverage includes one root, nested children and siblings, caller ID
+validation, duplicate IDs, unknown/forward/self parents, additional roots, cycles, reordered
+records, missing/unknown dependency and event attribution, exception-safe capture nesting,
+unsupported/non-JSON values, alias isolation, whole-capsule integrity mutation, 0.2/0.3 transport
+dispatch, mixed-version assembly rejection, historical-only replay behavior, framework-neutrality,
+and separation from operational telemetry. The controlled weather structure proves attribution
+and parent lookup only; it does not prove cause.
 
 Regression-promotion coverage requires explicit approval and selected assertions, accepts a
 repaired replay whose observation differs from history, rejects technical failure, proves no
@@ -48,12 +56,14 @@ Proves:
 
 - Captured paths can be reproduced offline.
 - Exact replay mechanics, recorded-dependency injection, and deterministic assertions work for the fixture.
+- A valid 0.3 capsule is accepted without requiring the runner to reproduce historical span IDs.
 
 Does not prove:
 
 - Production readiness.
 - Broad framework compatibility.
 - Live model quality.
+- Replay-side span equivalence, root cause, or cross-domain causal ordering.
 
 ## Planned Fork Replay Tests
 
@@ -121,6 +131,8 @@ Fake-model tests validate mechanics, not real model quality. Do not invent bench
 Purpose:
 
 - Verify one bounded HTTP-to-Go-to-Kafka-to-Python-to-sealed-capsule-to-replay path.
+- Verify versioned portable-span transport and deterministic assembly without treating transport or
+  operational trace IDs as evidence.
 - Verify optional W3C propagation, a separate replay Span Link, local metrics endpoints, duplicate handling, and a bounded sensitive-attribute scan.
 
 Proves:

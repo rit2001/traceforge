@@ -91,6 +91,15 @@ class SQLiteAssemblyState:
             "SELECT last_sequence, completed FROM captures WHERE capture_id = ?",
             (safe["capture_id"],),
         ).fetchone()
+        if row is not None:
+            first_body = self._connection.execute(
+                "SELECT body FROM events WHERE capture_id=? ORDER BY sequence LIMIT 1",
+                (safe["capture_id"],),
+            ).fetchone()
+            if first_body is not None:
+                first_version = json.loads(first_body[0])["schema_version"]
+                if safe["schema_version"] != first_version:
+                    raise AssemblyError("capture stream cannot mix capture-event schema versions")
         expected = 1 if row is None else row[0] + 1
         if safe["sequence"] != expected:
             raise SequenceGapError(
@@ -139,7 +148,16 @@ class SQLiteAssemblyState:
         events = [json.loads(row[0]) for row in rows]
         if not events or events[0]["event_type"] != "capture_started":
             raise AssemblyError("capture stream must start with capture_started")
+        event_versions = {event["schema_version"] for event in events}
+        if len(event_versions) != 1:
+            raise AssemblyError("capture stream cannot mix capture-event schema versions")
         draft = dict(events[0]["payload"])
+        if events[0]["schema_version"] == "0.3.0":
+            draft["execution_spans"] = [
+                item["payload"]
+                for item in events
+                if item["event_type"] == "execution_span_recorded"
+            ]
         draft["dependencies"] = [
             item["payload"] for item in events if item["event_type"] == "dependency_recorded"
         ]
@@ -150,6 +168,13 @@ class SQLiteAssemblyState:
         if completed["event_type"] != "capture_completed":
             raise AssemblyError("capture_completed must terminate the stream")
         draft["original_observation"] = completed["payload"]["original_observation"]
+        if (
+            completed["schema_version"] == "0.3.0"
+            and observations != draft["original_observation"]["events"]
+        ):
+            raise AssemblyError(
+                "capture-event 0.3 observation records must match capture_completed"
+            )
         if observations:
             draft["original_observation"]["events"] = observations
         draft["redaction"] = completed["payload"]["redaction"]

@@ -17,6 +17,8 @@ Read [PROJECT_MEMORY.md](../PROJECT_MEMORY.md) first. This directory is the auth
 - [Glossary](glossary.md): TraceForge-specific definitions for replay, tracing, testing, and security terms.
 - [Replay Capsule v0 contract](contracts/replay-capsule-v0.md): normative `0.1.0` document structure, replay semantics, validation boundaries, redaction, and integrity rules.
 - [Replay Capsule 0.2.0 contract](contracts/replay-capsule-v0.2.md): successor schema with generic ordered tool dependencies, safe request identity, and bounded failure replay.
+- [Replay Capsule 0.3.0 contract](contracts/replay-capsule-v0.3.md): portable execution-span tree,
+  explicit dependency/event attribution, and historical-only replay interaction.
 - [ADR-0001](decisions/ADR-0001-replay-first-product.md): accepted decision to build a replay-first product instead of a broad LangSmith clone.
 - [ADR-0002](decisions/ADR-0002-replay-capsule-v0-format.md): accepted Replay Capsule v0 format, canonicalization, integrity, dependency normalization, and fail-closed fixture decisions.
 - [ADR-0003](decisions/ADR-0003-capture-event-transport.md): accepted asynchronous capture-event envelope, ordering, idempotency, and evidence boundary.
@@ -25,6 +27,8 @@ Read [PROJECT_MEMORY.md](../PROJECT_MEMORY.md) first. This directory is the auth
 - [ADR-0006](decisions/ADR-0006-terraform-kustomize-ownership.md): accepted local Terraform foundation and disjoint Terraform/Kustomize object ownership.
 - [ADR-0007](decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md): accepted `0.2.0` tool dependency, sanitization, compatibility, and failure semantics.
 - [ADR-0008](decisions/ADR-0008-framework-agnostic-core.md): accepted framework-agnostic core and thin-adapter boundary for LangGraph and future integrations.
+- [ADR-0013](decisions/ADR-0013-portable-execution-spans.md): accepted portable execution-span
+  evidence, explicit structural attribution, capture-event evolution, and non-causal boundaries.
 - [ADR-0009](decisions/ADR-0009-portable-structured-execution-diff.md): accepted portable structured execution comparison, conservative sequence alignment, and successful exact-replay dependency transcript contract.
 - [ADR-0010](decisions/ADR-0010-workbench-run-read-model.md): accepted original-run Workbench read model, operational/evidence boundary, and read-only local API contract.
 - [ADR-0011](decisions/ADR-0011-evidence-backed-divergence-analysis.md): accepted evidence-backed divergence analysis, section-scoped first paths, bounded exact-replay context, and explicit non-causal limits.
@@ -61,6 +65,7 @@ Read [PROJECT_MEMORY.md](../PROJECT_MEMORY.md) first. This directory is the auth
 | [Security](security.md) | Trust boundaries and fixture safety | Security model | Data flow, secret risk, auth, telemetry, storage, or redaction boundary changes | Implementer plus security reviewer |
 | [Replay Capsule contract](contracts/replay-capsule-v0.md) | Normative capsule semantics | Format contract for `0.1.0` | Compatible clarification only; incompatible changes require a new version and ADR | Contract owner/maintainer |
 | [Replay Capsule 0.2.0 contract](contracts/replay-capsule-v0.2.md) | Normative generic-tool capsule semantics | Format contract for `0.2.0` | Compatible clarification only; incompatible changes require a new version and ADR | Contract owner/maintainer |
+| [Replay Capsule 0.3.0 contract](contracts/replay-capsule-v0.3.md) | Normative portable execution-span semantics | Format contract for `0.3.0` | Compatible clarification only; incompatible changes require a new version and ADR | Contract owner/maintainer |
 | [ADRs](decisions/) | Historical architectural decisions | Decision rationale and status | New decision or explicit supersession; accepted history is not silently rewritten | Decision owner/reviewers |
 | [Local Kubernetes operations](operations/kubernetes.md) | kind deployment and recovery procedure | Dedicated cluster lifecycle, access, persistence, and bounded verification | Manifest, lifecycle command, local failure mode, or recovery path changes | Kubernetes milestone implementer/operator |
 | [Local Terraform operations](operations/terraform.md) | local foundation lifecycle | Provider/state design, plan/apply/drift/destroy, and Terraform/Kustomize ownership order | Module, environment, state, provider, ownership, guard, or recovery path changes | Terraform milestone implementer/operator |

@@ -31,7 +31,10 @@ func main() {
 		os.Exit(1)
 	}
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
-	v, err := events.Load(cfg.SchemaPath)
+	v, err := events.LoadAll(map[string]string{
+		"0.2.0": cfg.SchemaPath,
+		"0.3.0": cfg.SchemaPathV03,
+	})
 	if err != nil {
 		slog.Error("schema unavailable", "error_type", "schema")
 		os.Exit(1)

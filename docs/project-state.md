@@ -17,13 +17,20 @@ APIs, explicit original-run source health, a reproducible controlled review cata
 execution-forensics Run Detail page over existing assembly state and sealed capsules. Exact replay
 collects a detached successful-consumption dependency transcript and attaches additive
 `ExecutionDiff` and `DivergenceAnalysis` values to each technically successful `ReplayResult`.
-Replay Capsule schemas remain unchanged, and the core remains framework-neutral.
+The core remains framework-neutral.
 
 Issue #5 adds an explicit replay-result-to-regression workflow. The public API returns the existing
 `RegressionSpec 0.1.0` from a caller-supplied constructible result, selected strict-JSON
 expectations, and explicit approval; it does not attest replay provenance. Workbench reruns current
 submitted evidence with a startup-registered runner and returns one coherent in-memory ZIP. Neither
 path requires deterministic equality or mutates capsules, diffs, analyses, or regression results.
+
+Issue #6 adds Replay Capsule `0.3.0` portable execution-span evidence. One explicit rooted tree
+records application-instrumented structural nesting, and every 0.3 dependency/event is attributed
+to a recorded span. Capture-event `0.3.0` carries those records through the optional distributed
+path. Operational OpenTelemetry identifiers remain outside evidence. Exact replay validates the
+historical structure but does not require current runner spans; `ExecutionDiff 0.1.0` and
+`DivergenceAnalysis 0.1.0` remain unchanged and make no causal claim.
 
 The release aligned package, CLI, Docker, CI, public documentation, license, contributor framework, artifacts, installation, localhost workbench, Kafka topic configuration, and bounded publication-safety surfaces. It did not redesign replay semantics, implement fork replay, or add production-readiness claims.
 
@@ -67,20 +74,28 @@ The release aligned package, CLI, Docker, CI, public documentation, license, con
   The domain API validates the selection against a supplied technically completed result;
   Workbench performs exact replay again and returns a content-addressed atomic bundle without
   accepting server paths; the existing deterministic pytest export remains the offline CI artifact.
+- v0.5 Issue #6 portable execution spans: ADR-0013 defines Replay Capsule `0.3.0` as one rooted,
+  ordered portable execution tree with required dependency/event attribution. `CaptureSession`
+  provides explicit session-local nesting; capture-event `0.3.0`, the Go gateway, Kafka conversion,
+  and assembly preserve the structure before normal sealing. Replay validates historical evidence
+  without replay-side span comparison, and diff/divergence contracts remain unchanged.
 
 ## Repository Status
 
-Documentation, Replay Capsule `0.1.0` and `0.2.0` schemas, the Capture Event schema, the `traceforge-replay` distribution, controlled local replay artifacts, focused tests, an optional Kafka worker, and a Go ingestion gateway exist.
+Documentation, Replay Capsule `0.1.0`, `0.2.0`, and `0.3.0` schemas, Capture Event `0.2.0` and
+`0.3.0` schemas, the `traceforge-replay` distribution, controlled local replay artifacts, focused
+tests, an optional Kafka worker, and a Go ingestion gateway exist.
 
 The documented release state is on `main`; retained branch `release/v0.4.1` and tag `v0.4.1` point to the verified release commit.
 
-The published distribution remains `0.4.1`; Replay Capsule versions, Capture Event `0.2.0`,
+The published distribution remains `0.4.1`; Replay Capsule versions, Capture Event versions,
 derived `ExecutionDiff` format `0.1.0`, and derived `DivergenceAnalysis` format `0.1.0` are
 independent contracts. The working tree supports explicit validation/replay dispatch for Replay
-Capsule `0.1.0` and `0.2.0`. `0.2.0` adds generic ordered tool capture/replay with
+Capsule `0.1.0`, `0.2.0`, and `0.3.0`. `0.2.0` adds generic ordered tool capture/replay with
 reject-by-default sensitive request identity and a bounded `TimeoutError` replay mapping. Exact
 replay additively emits a structured diff and its bounded analysis after validated execution and
-complete fixture consumption. One separate real application proves the package/API seam, but
+complete fixture consumption. `0.3.0` adds sealed structural attribution while leaving replay-side
+span reproduction and current diff/analysis contracts out of scope. One separate real application proves the package/API seam, but
 TraceForge still has no arbitrary LangGraph instrumentation, fork replay, live replay, hosted
 service, authentication, cloud/production Kubernetes, or cloud Terraform.
 
@@ -122,6 +137,12 @@ capsule directory without exposing path selection to the browser.
   existing assertion and export semantics, requires explicit approval, and never treats
   deterministic equality, technical completion, or an old regression verdict as automatic
   acceptance. Public `ReplayResult` values remain caller-trusted rather than provenance-attested.
+- ADR-0013 keeps portable execution spans distinct from operational telemetry and causal claims.
+  Version 0.3 uses `execution_span_id`/`parent_execution_span_id`, requires one root, earlier
+  resolving parents, and complete dependency/event attribution; replay validates historical
+  structure but does not compare replay-side spans. The first synchronous producer rejects
+  cross-thread/task use of an active stack, while the durable tree remains independent of a Python
+  call stack.
 
 ## Current Assumptions
 
@@ -143,9 +164,12 @@ capsule directory without exposing path selection to the browser.
 - Workbench promotion is a generation/download flow, not a persisted regression catalog. Browser
   export is one content-addressed ZIP rather than independently collision-prone files; trusted
   filesystem export remains fail-if-present unless replacement is explicitly requested.
-- Current evidence domains do not share a proven chronology and carry no causal-span or verifier
-  relationship, so divergence analysis cannot identify a root cause or rank one domain as globally
-  earliest.
+- Current evidence domains do not share a proven chronology. Portable execution parents and
+  attribution are structural only, with no causal or verifier relationship, so divergence analysis
+  cannot identify a root cause or rank one domain as globally earliest.
+- `CaptureSession.execution_span()` is intentionally a synchronous, single-active-context producer.
+  The 0.3 tree can represent siblings and future concurrent producers, but this API does not
+  instrument concurrent threads/tasks or propagate span context implicitly.
 - Pre-existing follow-up technical debt outside Issue #3: `ReplayResult` observation export alias
   hardening and `RegressionResult`/`AssertionResult` expected/actual snapshot alias hardening.
 - Pre-existing `RegressionSpec 0.1.0` behavior: `equals` delegates to Python `==`, including Python's
@@ -161,8 +185,8 @@ Cloud Terraform, remote production state, cloud/production Kubernetes, Helm, ope
 
 ## Exact Next Approved Task
 
-Finish and adversarially review v0.5 Issue #5 regression promotion and CI workflow. Do not begin a
-subsequent feature without explicit approval.
+Human/semantic review of the adversarially hardened v0.5 Issue #6 portable execution-span contract.
+Do not begin a subsequent feature without explicit approval.
 
 ## Milestone-Boundary Checklist
 

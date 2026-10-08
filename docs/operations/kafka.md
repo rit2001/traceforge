@@ -55,7 +55,7 @@ docker compose -f compose.kafka.yml logs traceforge-worker
 curl -fsS http://127.0.0.1:19464/metrics
 ```
 
-Track `traceforge_worker_dlq_events_total` and error types. Do not print raw DLQ payloads until they have been reviewed for secrets. Identify whether failures are malformed JSON, schema violations, sequence gaps, conflicting duplicates, or a version mismatch. Fix the producer or compatibility path; do not edit sealed capsules or silently discard the DLQ.
+Track `traceforge_worker_dlq_events_total` and error types. Do not print raw DLQ payloads until they have been reviewed for secrets. Identify whether failures are malformed JSON, schema violations, sequence gaps, conflicting duplicates, a mixed capture-event stream, or a version mismatch. Capture-event 0.3 requires `execution_span_recorded` before attributed dependency/event records and complete span payloads. Confirm the gateway loaded both configured schema paths. Fix the producer or compatibility path; do not edit sealed capsules or silently discard the DLQ.
 
 ## Capsule Not Appearing
 

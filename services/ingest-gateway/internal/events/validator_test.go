@@ -71,3 +71,49 @@ func TestMalformedMultipleAndSecretValues(t *testing.T) {
 		t.Fatal("secret accepted")
 	}
 }
+
+func TestVersionDispatchAcceptsPortableExecutionSpanEvent(t *testing.T) {
+	v, err := LoadAll(map[string]string{
+		"0.2.0": repository(t, "schemas", "capture-event-v0.schema.json"),
+		"0.3.0": repository(t, "schemas", "capture-event-v0.3.schema.json"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := []byte(`{"schema_version":"0.3.0","event_id":"event-1","capture_id":"capture-1","sequence":1,"event_type":"execution_span_recorded","occurred_at":"2026-07-19T12:00:00Z","producer":{"name":"fixture","version":"0.3.0"},"payload":{"execution_span_id":"root","parent_execution_span_id":null,"sequence":1,"kind":"agent","name":"root","component":"fixture"}}`)
+	if _, err := v.Validate(body); err != nil {
+		t.Fatal(err)
+	}
+	body = []byte(`{"schema_version":"0.2.0","event_id":"event-1","capture_id":"capture-1","sequence":1,"event_type":"execution_span_recorded","occurred_at":"2026-07-19T12:00:00Z","producer":{"name":"fixture","version":"0.2.0"},"payload":{"execution_span_id":"root"}}`)
+	if _, err := v.Validate(body); err == nil {
+		t.Fatal("0.2 event accepted a 0.3-only event_type")
+	}
+}
+
+func TestVersionDispatchRejectsUnsupportedVersion(t *testing.T) {
+	v, err := LoadAll(map[string]string{
+		"0.2.0": repository(t, "schemas", "capture-event-v0.schema.json"),
+		"0.3.0": repository(t, "schemas", "capture-event-v0.3.schema.json"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := []byte(`{"schema_version":"0.4.0","event_id":"event-1","capture_id":"capture-1","sequence":1,"event_type":"capture_started","occurred_at":"2026-07-19T12:00:00Z","producer":{"name":"fixture","version":"0.4.0"},"payload":{}}`)
+	if _, err := v.Validate(body); err == nil {
+		t.Fatal("unsupported version accepted")
+	}
+}
+
+func TestGatewayDoesNotReinterpretExecutionSpanTreeSemantics(t *testing.T) {
+	v, err := LoadAll(map[string]string{
+		"0.2.0": repository(t, "schemas", "capture-event-v0.schema.json"),
+		"0.3.0": repository(t, "schemas", "capture-event-v0.3.schema.json"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := []byte(`{"schema_version":"0.3.0","event_id":"event-2","capture_id":"capture-1","sequence":2,"event_type":"execution_span_recorded","occurred_at":"2026-07-19T12:00:00Z","producer":{"name":"fixture","version":"0.3.0"},"payload":{"execution_span_id":"child","parent_execution_span_id":"unknown-parent","sequence":2,"kind":"step","name":"child","component":"fixture"}}`)
+	if _, err := v.Validate(body); err != nil {
+		t.Fatalf("gateway applied Python-owned tree semantics: %v", err)
+	}
+}

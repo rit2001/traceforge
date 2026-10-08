@@ -70,14 +70,14 @@ A fixture is safe for TraceForge only if:
 
 The implementation assumes local execution, local files, offline default tests, and no hosted upload. The optional Go/Kafka/Collector Compose topology binds host ports to loopback and remains development-only. The kind topology exposes no LoadBalancer or Ingress and relies on explicit loopback `kubectl port-forward`. It uses ConfigMaps only for non-sensitive values and creates no fake or empty Secret objects. Live model use is separate, opt-in, unimplemented in the current replay surface, and outside default CI.
 
-Telemetry must not contain capture payloads, dependency responses, credentials, authorization material, raw user messages, or high-cardinality identifiers in metric labels. Trace and span identifiers belong to operational telemetry/SQLite correlation, never Replay Capsules. Collector failure must not block capture, sealing, validation, or replay.
+Telemetry must not contain capture payloads, dependency responses, credentials, authorization material, raw user messages, or high-cardinality identifiers in metric labels. W3C trace/span identifiers belong to operational telemetry/SQLite correlation, never Replay Capsules. Replay Capsule 0.3 portable execution-span IDs are a separate application-owned evidence namespace and must not be derived from operational context. Collector failure must not block capture, sealing, validation, or replay.
 
 No secret value belongs in Terraform variables, plans, state, logs, outputs, or examples. The committed provider lock file contains provider selections and checksums, not credentials; `.terraform/`, plans, and state are ignored. The five workload ServiceAccounts and Pod specs disable token automount because the services do not require Kubernetes API access. A production design would need a protected remote backend with encryption, locking, access control, backup, recovery testing, and audit procedures; the local backend supplies none of those controls.
 
 ## Known Limitations
 
 - A versioned best-effort redaction scanner is implemented, but it cannot detect every sensitive value or prove secret absence.
-- Replay Capsule `0.1.0` and `0.2.0` are defined by their accepted [contracts](contracts/) and separate structural schemas. `0.1.0` remains unchanged.
+- Replay Capsule `0.1.0`, `0.2.0`, and `0.3.0` are defined by their accepted [contracts](contracts/) and separate structural schemas. Published versions remain unchanged.
 - Safe fixture review criteria are not detailed yet.
 - No production threat model exists yet.
 - The local dashboard and OTLP endpoint have no authentication, and transport is not a production security design.

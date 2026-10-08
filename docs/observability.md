@@ -6,7 +6,7 @@ TraceForge can emit local OpenTelemetry traces across the capture path without p
 
 An instrumented client sends W3C `traceparent` and optional `tracestate` headers to the Go gateway. The gateway extracts that context, creates `capture.receive`, `capture.validate`, and `capture.publish`, and injects the resulting W3C context into Kafka record headers. The Python worker attaches that context only while processing the message and creates `capture.consume`; a completed stream also creates `capsule.assemble` and `capsule.seal`.
 
-Replay is deliberately later and separate. `replay.execute` starts a new trace and may contain a Span Link to capture correlation stored in SQLite. Trace IDs and span IDs are operational metadata: they are not added to or used to rewrite immutable capsule evidence. Missing correlation does not block replay.
+Replay is deliberately later and separate. `replay.execute` starts a new trace and may contain a Span Link to capture correlation stored in SQLite. W3C trace IDs and span IDs are operational metadata: they are not added to or used to rewrite immutable capsule evidence. Replay Capsule 0.3 portable execution spans use caller-owned evidence IDs and are never derived from this context. Missing correlation does not block replay.
 
 Service names are `traceforge-ingest-gateway`, `traceforge-capsule-worker`, and `traceforge-api`. The instrumented local verifier uses `traceforge-smoke-client`.
 

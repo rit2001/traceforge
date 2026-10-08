@@ -8,7 +8,9 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
 
 ## Current Verified Capabilities
 
-- Replay Capsule `0.1.0` compatibility plus successor `0.2.0` structural and semantic validation, RFC 8785 canonicalization, SHA-256 request fingerprints, and sealing.
+- Replay Capsule `0.1.0`/`0.2.0` compatibility plus successor `0.3.0` structural and semantic
+  validation, RFC 8785 canonicalization, SHA-256 request fingerprints, and sealing. Version 0.3
+  records one portable execution-span tree with explicit dependency/event attribution.
 - Best-effort capture/redaction for Python plus a controlled optional LangGraph adapter.
 - One separately maintained Agentic-chatbot integration proves the editable package/API boundary,
   real ordered ChatGroq/Tavily capture, persisted exact replay with both live callables disabled,
@@ -26,6 +28,10 @@ TraceForge is an experimental, local-first developer tool for turning a failed P
   currently submitted sealed capsule with its startup-registered runner, then returns one coherent
   in-memory regression bundle. Repaired behavior may differ from history, and neither path mutates
   evidence or derived replay values.
+- Framework-neutral portable execution spans use explicit `execution_span_id` and
+  `parent_execution_span_id` evidence names, record application-instrumented structural nesting,
+  and attribute every 0.3 dependency/event to one recorded boundary. They are sealed historical
+  evidence, remain separate from operational OpenTelemetry, and do not establish causality.
 - Controlled weather, RAG citation-grounding, and tool-argument-safety examples.
 - Local FastAPI dashboard with allow-listed runners and SQLite replay history.
 - Local Workbench original-run catalog and execution-forensics detail backed by read-only assembly
@@ -78,8 +84,10 @@ Architecture detail belongs in [docs/architecture.md](docs/architecture.md), and
 - Promotion is a developer decision: no replay, diff, analysis, or passing regression result can
   silently infer or approve an expectation.
 - Telemetry correlation, replay history, and assembly state are operational data in SQLite or telemetry systems, never capsule fields.
+- Portable execution spans are sanitized subject evidence. Their parent links mean recorded
+  structural containment only, never root cause, verification, or causal responsibility.
 
-The normative format and integrity rules are in [the `0.1.0` contract](docs/contracts/replay-capsule-v0.md), [the `0.2.0` contract](docs/contracts/replay-capsule-v0.2.md), [ADR-0002](docs/decisions/ADR-0002-replay-capsule-v0-format.md), and [ADR-0007](docs/decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md).
+The normative format and integrity rules are in [the `0.1.0` contract](docs/contracts/replay-capsule-v0.md), [the `0.2.0` contract](docs/contracts/replay-capsule-v0.2.md), [the `0.3.0` contract](docs/contracts/replay-capsule-v0.3.md), [ADR-0002](docs/decisions/ADR-0002-replay-capsule-v0-format.md), [ADR-0007](docs/decisions/ADR-0007-replay-capsule-0.2-tool-dependencies.md), and [ADR-0013](docs/decisions/ADR-0013-portable-execution-spans.md).
 
 ## Replay Guarantees and Non-Guarantees
 
@@ -103,7 +111,7 @@ The Go gateway never performs replay or claim that `202 Accepted` means broker d
 
 ## OpenTelemetry Correlation Model
 
-An instrumented client supplies W3C `traceparent`/`tracestate`. Go continues that context through receive, validate, and publish spans and injects it into Kafka headers. The worker attaches the message context while consuming and creates assembly/seal descendants. Later replay starts a separate trace whose `replay.execute` span may link to capture correlation retained in SQLite. Missing telemetry or correlation never blocks evidence or replay, and trace identifiers never enter the capsule. See [docs/observability.md](docs/observability.md).
+An instrumented client supplies W3C `traceparent`/`tracestate`. Go continues that context through receive, validate, and publish spans and injects it into Kafka headers. The worker attaches the message context while consuming and creates assembly/seal descendants. Later replay starts a separate trace whose `replay.execute` span may link to capture correlation retained in SQLite. Missing telemetry or correlation never blocks evidence or replay, and operational trace identifiers never enter the capsule. Replay Capsule 0.3 portable execution-span IDs are a separate application-owned evidence namespace and are never derived from W3C identifiers. See [docs/observability.md](docs/observability.md) and [ADR-0013](docs/decisions/ADR-0013-portable-execution-spans.md).
 
 ## Security Boundaries
 
@@ -139,19 +147,23 @@ The canonical security model is [docs/security.md](docs/security.md); vulnerabil
   caller-approved supplied replay result into the existing developer-owned regression
   specification, plus a server-replayed atomic Workbench bundle, without changing historical
   evidence.
+- [ADR-0013](docs/decisions/ADR-0013-portable-execution-spans.md): Replay Capsule `0.3.0`, one
+  portable structural tree, required dependency/event attribution, capture-event `0.3.0`, and a
+  strict separation from causal and OpenTelemetry claims.
 
 ADRs are historical records. Supersede them with a new ADR; do not silently rewrite accepted decisions.
 
 ## Current Branch, Milestone, and Limitations
 
-- Documented branch: `feat/v0.5-regression-promotion`; retained branch `release/v0.4.1` and
+- Documented branch: `feat/v0.5-portable-execution-spans`; retained branch `release/v0.4.1` and
   tag `v0.4.1` identify the verified release commit.
 - Current milestone: `v0.5.0 — Real Agent Capture` is active; the generic Replay Capsule `0.2.0`
   tool boundary, one separate real Agentic-chatbot integration, and the portable structured
   execution diff with exact-replay integration are implemented. Issue #4 derives a compact
   framework-neutral divergence analysis from the diff without changing comparison semantics.
   Issue #5 adds explicit regression promotion and offline CI export through the existing
-  `RegressionSpec` contract. Workbench V1 Phase 1 adds a read-only original-run catalog, explicit source states, reproducible
+  `RegressionSpec` contract. Issue #6 adds portable execution-span evidence without changing
+  replay-side structure, `ExecutionDiff`, or `DivergenceAnalysis`. Workbench V1 Phase 1 adds a read-only original-run catalog, explicit source states, reproducible
   controlled review data, a real Run Detail view, and bounded replay-result analysis while `0.1.0`
   remains unchanged.
 - Known limitations: only one application-owned real-agent integration exists; tool results that require
@@ -162,8 +174,8 @@ ADRs are historical records. Supersede them with a new ADR; do not silently rewr
   SQLite is single writer; and kind, Terraform, and the Collector topology are local development
   only.
 - Workbench limitations: no durable original-run-to-runner association, no persisted replay
-  observation/diff/analysis/assertion detail, and no parent-child span or multi-agent causal graph
-  yet. Current analysis cannot rank domains globally or infer cause.
+  observation/diff/analysis/assertion detail, no portable-span tree rendering, and no multi-agent
+  or causal graph. Current analysis cannot rank domains globally or infer cause.
   Assembly rows still retain service-local absolute capsule paths; Workbench has a confined trusted
   startup-root fallback for cross-environment reads, while a portable durable reference remains
   follow-up storage debt.
@@ -175,8 +187,9 @@ Live branch, milestone, blockers, and assumptions belong in [docs/project-state.
 
 ## Exact Next Approved Milestone
 
-Current approved milestone: v0.5 Issue #5 regression promotion and CI workflow. No subsequent
-milestone is approved.
+Current approved milestone: v0.5 Issue #6 portable execution spans. The implementation has passed
+local adversarial review and is ready for human/semantic review; no subsequent milestone is
+approved.
 
 ## Required Reading Order
 

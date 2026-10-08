@@ -8,4 +8,11 @@ Run locally with `docker compose -f compose.kafka.yml up --build`. The gateway l
 
 The local kind deployment runs this same image and configuration behind a ClusterIP Service. Access it only through the loopback port-forward in the [Kubernetes runbook](../operations/kubernetes.md); `202`, readiness, and backpressure semantics are unchanged.
 
+The image contains immutable capture-event 0.2 and successor 0.3 schemas. Startup loads both
+through explicit version dispatch (`CAPTURE_EVENT_SCHEMA` and `CAPTURE_EVENT_SCHEMA_V03`), so an
+unsupported version or a 0.3-only `execution_span_recorded` type under a 0.2 envelope returns
+`400` before enqueue. The 0.3 span payload is structurally validated at ingress. Gateway
+validation still does not make a transport event evidence; assembly and capsule sealing remain
+the evidence boundary.
+
 With the Compose `observability` profile, application startup configures the optional OTLP exporter. W3C HTTP trace context is continued through `capture.receive`, `capture.validate`, and `capture.publish`, then injected into Kafka headers. See [Local observability](../observability.md) for verification commands and limitations.

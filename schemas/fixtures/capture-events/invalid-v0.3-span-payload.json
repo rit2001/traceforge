@@ -1,0 +1,1 @@
+{"schema_version":"0.3.0","event_id":"event-span-1","capture_id":"capture-span-1","sequence":2,"event_type":"execution_span_recorded","occurred_at":"2026-10-08T00:00:00Z","producer":{"name":"fixture","version":"0.3.0"},"payload":{"execution_span_id":"weather-agent","parent_execution_span_id":null,"sequence":1,"kind":"agent","name":"weather_agent"}}

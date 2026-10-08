@@ -50,7 +50,10 @@ func fixture(t *testing.T, name string) []byte {
 }
 func api(t *testing.T, p *fakePublisher, max int64) (http.Handler, *prometheus.Registry) {
 	t.Helper()
-	v, e := events.Load(filepath.Join("..", "..", "..", "..", "schemas", "capture-event-v0.schema.json"))
+	v, e := events.LoadAll(map[string]string{
+		"0.2.0": filepath.Join("..", "..", "..", "..", "schemas", "capture-event-v0.schema.json"),
+		"0.3.0": filepath.Join("..", "..", "..", "..", "schemas", "capture-event-v0.3.schema.json"),
+	})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -72,6 +75,15 @@ func TestValidAcceptedAndCaptureIDKey(t *testing.T) {
 	h, _ := api(t, p, 4096)
 	w := request(t, h, fixture(t, "valid.json"), "application/json")
 	if w.Code != 202 || p.key != "capture-1" {
+		t.Fatalf("code=%d key=%q", w.Code, p.key)
+	}
+}
+
+func TestPortableExecutionSpanEventAccepted(t *testing.T) {
+	p := &fakePublisher{ready: true}
+	h, _ := api(t, p, 4096)
+	w := request(t, h, fixture(t, "valid-v0.3-execution-span.json"), "application/json")
+	if w.Code != 202 || p.key != "capture-span-1" {
 		t.Fatalf("code=%d key=%q", w.Code, p.key)
 	}
 }

@@ -22,6 +22,8 @@ from traceforge.validation import validate_capsule, validate_observation_semanti
 
 Runner = Callable[[Any, DependencyAdapter], dict[str, Any]]
 _DIAGNOSTIC_KEYS = {"duration_ms", "recorded_at", "timestamp", "started_at", "finished_at"}
+_HISTORICAL_EVENT_ATTRIBUTION_KEY = "execution_span_id"
+_HISTORICAL_EVENT_ATTRIBUTION_PATH = "events[*].execution_span_id"
 
 
 @dataclass(frozen=True)
@@ -35,13 +37,19 @@ class ReplayResult:
     divergence_analysis: DivergenceAnalysis | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        ignored_fields = set(_DIAGNOSTIC_KEYS)
+        if any(
+            _HISTORICAL_EVENT_ATTRIBUTION_KEY in event
+            for event in self.original_observation.get("events", [])
+        ):
+            ignored_fields.add(_HISTORICAL_EVENT_ATTRIBUTION_PATH)
         return {
             "technical_status": self.technical_status,
             "original_observation": self.original_observation,
             "replay_observation": self.replay_observation,
             "comparison": {
                 "deterministic_match": self.deterministic_match,
-                "ignored_fields": sorted(_DIAGNOSTIC_KEYS),
+                "ignored_fields": sorted(ignored_fields),
             },
             "regression": None if self.regression is None else self.regression.to_dict(),
             "execution_diff": (
@@ -87,6 +95,18 @@ def _without_diagnostics(value: Any) -> Any:
     if isinstance(value, list):
         return [_without_diagnostics(item) for item in value]
     return value
+
+
+def _without_historical_structure(value: Any) -> Any:
+    projected = deepcopy(value)
+    if not isinstance(projected, dict):
+        return projected
+    events = projected.get("events")
+    if isinstance(events, list):
+        for event in events:
+            if isinstance(event, dict):
+                event.pop(_HISTORICAL_EVENT_ATTRIBUTION_KEY, None)
+    return projected
 
 
 def replay_exact(
@@ -136,7 +156,8 @@ def _replay_exact(
         original_observation=original_observation,
         replay_observation=deepcopy(replay_observation),
         deterministic_match=(
-            _without_diagnostics(original_observation) == _without_diagnostics(replay_observation)
+            _without_diagnostics(_without_historical_structure(original_observation))
+            == _without_diagnostics(_without_historical_structure(replay_observation))
         ),
         regression=regression,
         execution_diff=execution_diff,

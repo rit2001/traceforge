@@ -15,6 +15,12 @@ def test_shared_positive_capture_event_fixture() -> None:
     sanitize_and_validate_event(json.loads((FIXTURES / "valid.json").read_text()))
 
 
+def test_shared_positive_capture_event_03_fixture() -> None:
+    sanitize_and_validate_event(
+        json.loads((FIXTURES / "valid-v0.3-execution-span.json").read_text())
+    )
+
+
 @pytest.mark.parametrize("path", sorted(FIXTURES.glob("invalid-*.json")))
 def test_shared_negative_capture_event_fixtures(path: Path) -> None:
     with pytest.raises(StructuralValidationError):

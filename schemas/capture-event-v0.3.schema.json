@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:traceforge:schema:capture-event:0.3.0",
+  "title": "TraceForge Capture Event v0.3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "capture_id",
+    "sequence",
+    "event_type",
+    "occurred_at",
+    "producer",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": { "const": "0.3.0" },
+    "event_id": { "$ref": "#/$defs/id" },
+    "capture_id": { "$ref": "#/$defs/id" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "event_type": {
+      "enum": [
+        "capture_started",
+        "execution_span_recorded",
+        "dependency_recorded",
+        "observation_recorded",
+        "capture_completed",
+        "capture_failed"
+      ]
+    },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "producer": { "$ref": "#/$defs/producer" },
+    "payload": { "$ref": "#/$defs/jsonValue" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "event_type": { "const": "execution_span_recorded" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": { "payload": { "$ref": "#/$defs/executionSpan" } }
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "executionSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_span_id",
+        "parent_execution_span_id",
+        "sequence",
+        "kind",
+        "name",
+        "component"
+      ],
+      "properties": {
+        "execution_span_id": { "$ref": "#/$defs/id" },
+        "parent_execution_span_id": {
+          "oneOf": [
+            { "$ref": "#/$defs/id" },
+            { "type": "null" }
+          ]
+        },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "kind": { "$ref": "#/$defs/executionSpanLabel" },
+        "name": { "$ref": "#/$defs/executionSpanLabel" },
+        "component": { "$ref": "#/$defs/executionSpanLabel" }
+      }
+    },
+    "executionSpanLabel": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "jsonValue": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } },
+        { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }
+      ]
+    }
+  }
+}

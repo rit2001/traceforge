@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -51,17 +52,42 @@ def create_worker(
 
 def capsule_events(capsule: dict[str, Any], capture_id: str) -> list[dict[str, Any]]:
     """Convert one sealed capsule into a sanitized transport event stream."""
-    excluded = {"dependencies", "original_observation", "redaction", "integrity"}
+    is_portable_span_capsule = capsule.get("schema_version") == "0.3.0"
+    if is_portable_span_capsule:
+        validate_capsule(capsule)
+    event_version = "0.3.0" if is_portable_span_capsule else "0.2.0"
+    excluded = {
+        "execution_spans",
+        "dependencies",
+        "original_observation",
+        "redaction",
+        "integrity",
+    }
     base = {key: value for key, value in capsule.items() if key not in excluded}
     events: list[dict[str, Any]] = []
     sequence = 1
-    events.append(_event(capture_id, sequence, "capture_started", base))
+    events.append(_event(capture_id, sequence, "capture_started", base, event_version))
     sequence += 1
+    for execution_span in capsule.get("execution_spans", []):
+        events.append(
+            _event(
+                capture_id,
+                sequence,
+                "execution_span_recorded",
+                execution_span,
+                event_version,
+            )
+        )
+        sequence += 1
     for dependency in capsule["dependencies"]:
-        events.append(_event(capture_id, sequence, "dependency_recorded", dependency))
+        events.append(
+            _event(capture_id, sequence, "dependency_recorded", dependency, event_version)
+        )
         sequence += 1
     for observation in capsule["original_observation"]["events"]:
-        events.append(_event(capture_id, sequence, "observation_recorded", observation))
+        events.append(
+            _event(capture_id, sequence, "observation_recorded", observation, event_version)
+        )
         sequence += 1
     events.append(
         _event(
@@ -72,21 +98,28 @@ def capsule_events(capsule: dict[str, Any], capture_id: str) -> list[dict[str, A
                 "original_observation": capsule["original_observation"],
                 "redaction": capsule["redaction"],
             },
+            event_version,
         )
     )
     return events
 
 
-def _event(capture_id: str, sequence: int, event_type: str, payload: Any) -> dict[str, Any]:
+def _event(
+    capture_id: str,
+    sequence: int,
+    event_type: str,
+    payload: Any,
+    schema_version: str,
+) -> dict[str, Any]:
     return {
-        "schema_version": "0.2.0",
+        "schema_version": schema_version,
         "event_id": f"{capture_id}-event-{sequence}",
         "capture_id": capture_id,
         "sequence": sequence,
         "event_type": event_type,
         "occurred_at": "2026-07-19T12:00:00Z",
-        "producer": {"name": "traceforge-smoke", "version": "0.2.0"},
-        "payload": payload,
+        "producer": {"name": "traceforge-smoke", "version": schema_version},
+        "payload": deepcopy(payload),
     }
 
 

@@ -4,9 +4,27 @@
 
 A recorded view of one agent execution, including the inputs, model interactions, tool calls, tool outputs, graph transitions, and final result needed to understand what happened.
 
-## Span
+## Portable Execution Span
 
-A bounded part of a trace, such as one graph node, model call, tool call, or replay step. Spans help compare where two executions diverged.
+A sanitized, framework-neutral logical execution boundary sealed in Replay Capsule 0.3 evidence.
+It has an application-owned stable ID and may have one structural parent. It can contain attributed
+dependencies/events. The relationship records explicit nesting, not causality or root cause.
+
+## Structural Parent
+
+The portable execution span beneath which a child boundary was explicitly recorded as structurally
+nested. It does not mean caller, cause, owner, verifier, responsible agent, or root cause.
+
+## Execution Attribution
+
+An explicit `execution_span_id` relationship stating that a dependency or portable event was
+recorded inside one portable execution span. It is sealed evidence but is not causal proof.
+
+## Operational OpenTelemetry Span
+
+Optional service/process telemetry used for timing and correlation across gateway, Kafka,
+assembly, or replay work. Its W3C identifiers may be absent and remain outside Replay Capsule
+evidence. It is a different identity domain from a portable execution span.
 
 ## Event
 
